@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { FaClipboardList } from "react-icons/fa"
 import { FcGoogle } from "react-icons/fc"
