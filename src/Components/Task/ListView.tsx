@@ -396,7 +396,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask }) => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {/* Due Date */}
+                    
                           <div className="relative">
                             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                               <FaCalendarAlt className="text-gray-400" />
