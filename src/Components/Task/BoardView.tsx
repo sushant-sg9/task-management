@@ -24,6 +24,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FiMoreHorizontal, FiCalendar, FiPaperclip } from "react-icons/fi";
 import { format } from "date-fns";
 import Loader from "../Utiles/Loader";
+import BoardSkeleton from "../Utiles/BoardSkeleton";
 
 const SortableTaskCard: React.FC<{
   task: Task;
@@ -69,23 +70,6 @@ const TaskCard: React.FC<{
   onDelete: () => void;
   isDragging?: boolean;
 }> = ({ task, onEdit, onDelete, isDragging = false }) => {
-  const getCategoryColor = (category: string) => {
-    return category === "WORK" ? "bg-blue-600" : "bg-purple-600";
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "TO-DO":
-        return "bg-gray-200 text-gray-800";
-      case "IN-PROGRESS":
-        return "bg-amber-200 text-amber-800";
-      case "COMPLETED":
-        return "bg-emerald-200 text-emerald-800";
-      default:
-        return "bg-gray-200 text-gray-800";
-    }
-  };
-
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "MMM dd");
@@ -107,15 +91,15 @@ const TaskCard: React.FC<{
       } cursor-pointer`}
     >
       <div className="flex justify-between items-start mb-3">
-      <h3
-        className={`${
-          task.status === "COMPLETED"
-            ? "line-through text-gray-400"
-            : "text-gray-800 font-medium mb-2.5 truncate line-clamp-2 text-base"
-        } truncate w-40 block text-xl mb-4`}
-      >
-        {task.title}
-      </h3>
+        <h3
+          className={`${
+            task.status === "COMPLETED"
+              ? "line-through text-gray-400"
+              : "text-gray-800 font-medium mb-2.5 truncate line-clamp-2 text-base"
+          } truncate w-40 block text-xl mb-4`}
+        >
+          {task.title}
+        </h3>
         <div className="relative group">
           <button className="text-gray-500 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100 transition-colors">
             <FiMoreHorizontal size={16} />
@@ -139,24 +123,17 @@ const TaskCard: React.FC<{
         </div>
       </div>
 
-      
-
-
-    
-
-        <div className="mt-2">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-gray-500">{task.category}</span>
-            <span className="text-xs text-gray-500">
-              {formatDate(task.dueDate)}
-            </span>
-          </div>
+      <div className="mt-2">
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-gray-500">{task.category}</span>
+          <span className="text-xs text-gray-500">
+            {formatDate(task.dueDate)}
+          </span>
         </div>
+      </div>
     </motion.div>
   );
 };
-
-
 
 const DroppableColumn: React.FC<{
   id: string;
@@ -253,6 +230,7 @@ const BoardView: React.FC<BoardViewProps> = ({
     searchTerm: "",
   });
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -283,17 +261,23 @@ const BoardView: React.FC<BoardViewProps> = ({
     });
   }, [searchQuery, filters]);
 
-  const loadTasks = async () => {
-    setLoading(true);
-    try {
-      const userTasks = await taskService.getUserTasks(user?.uid || "");
-      setTasks(userTasks);
-    } catch (error) {
-      console.error("Error loading tasks:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+const loadTasks = async () => {
+  setLoading(true);
+  setInitialLoading(true);
+  
+  try {
+    const userTasks = await taskService.getUserTasks(user?.uid || "");
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setTasks(userTasks);
+  } catch (error) {
+    console.error("Error loading tasks:", error);
+  } finally {
+    setLoading(false);
+    setInitialLoading(false);
+  }
+};
 
   const handleDeleteTask = async (taskId: string) => {
     setLoading(true);
@@ -476,11 +460,13 @@ const BoardView: React.FC<BoardViewProps> = ({
       textBg: "bg-emerald-200",
     },
   };
+  if (initialLoading) {
+    return <BoardSkeleton />;
+  }
 
   return (
     <>
-      {" "}
-      {loading && <Loader isLoading={loading} />}
+      {loading && !initialLoading && <Loader isLoading={loading} />}
       <div className="container mx-auto px-4 py-6">
         <DndContext
           sensors={sensors}
