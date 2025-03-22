@@ -56,6 +56,10 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const multiSelectDropdownRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    title?: string;
+  }>({});
+
   const [statusDropdownTaskId, setStatusDropdownTaskId] = useState<
     string | null
   >(null);
@@ -117,8 +121,16 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask }) => {
     setActiveTaskAction(null);
   };
   const handleAddTask = async () => {
-    if (!newTask.title) return;
-
+    const newErrors: {
+      title?: string;
+    } = {};
+    
+    if (!newTask.title || newTask.title.trim() === '') {
+      newErrors.title = "Title is required";
+      setErrors(newErrors); 
+      return;
+    }
+  
     setLoading(true);
     try {
       const taskToCreate = {
@@ -445,7 +457,10 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask }) => {
                     {!addingTask ? (
                       <motion.button
                         className="flex items-center text-purple-700 hover:text-purple-900 transition-colors duration-200 font-bold text-sm py-3 px-6 rounded-full hover:bg-purple-100 shadow-md border-2 border-purple-300"
-                        onClick={() => setAddingTask(true)}
+                        onClick={() => {
+                          setAddingTask(true);
+                          setErrors({}); 
+                        }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -466,16 +481,29 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask }) => {
                               placeholder="Task Title"
                               className="w-full p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500 text-gray-800 placeholder-gray-500 shadow-md transition-all duration-200 bg-white hover:border-purple-400"
                               value={newTask.title}
-                              onChange={(e) =>
+                              onChange={(e) => {
                                 setNewTask({
                                   ...newTask,
                                   title: e.target.value,
-                                })
-                              }
+                                });
+                                if (errors.title) {
+                                  setErrors({ ...errors, title: undefined });
+                                }
+                              }}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               transition={{ delay: 0.1 }}
                             />
+                            {errors.title && (
+                              <motion.p
+                                className="text-red-600 text-xs mt-1 ml-1 font-medium"
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                {errors.title}
+                              </motion.p>
+                            )}
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -665,248 +693,270 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask }) => {
                   initial="hidden"
                   animate="visible"
                 >
-                 {tasksArray.length > 0 ? (
-  tasksArray.map((task) => (
-    <motion.div
-      key={task.id}
-      className={`grid grid-cols-1 md:grid-cols-4 border-b border-gray-300 last:border-b-0 bg-white hover:bg-gray-50 transition-all duration-200 p-5 ${
-        selectedTasks.includes(task.id!) ? "bg-purple-100" : ""
-      }`}
-      variants={itemVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      layout
-    >
-      <div className="flex items-center justify-between">
-        {/* Left side with checkbox, status icon and title */}
-        <div className="flex items-center">
-          <motion.div
-            className={`flex items-center justify-center w-6 h-6 rounded-md border-2 ${
-              selectedTasks.includes(task.id!)
-                ? "bg-purple-700 border-purple-800"
-                : "border-gray-400"
-            } mr-3 cursor-pointer shadow-md`}
-            onClick={() => toggleTaskSelection(task.id!)}
-            variants={checkboxVariants}
-            animate={selectedTasks.includes(task.id!) ? "checked" : "unchecked"}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            {selectedTasks.includes(task.id!) && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 500,
-                  damping: 15,
-                }}
-              >
-                <PiCheckCircleFill size={18} className="text-white" />
-              </motion.div>
-            )}
-          </motion.div>
-          <motion.div
-            whileHover={{ scale: 1.2 }}
-            transition={{ type: "spring", stiffness: 500 }}
-          >
-            <PiCheckCircleFill
-              size={18}
-              className={`mr-3 ${getStatusCircleColor(task.status)}`}
-            />
-          </motion.div>
-          <TbGridDots className="mr-3 text-gray-500 hidden md:block" />
-          <span
-            className={`${
-              task.status === "COMPLETED"
-                ? "line-through text-gray-500"
-                : "text-gray-800 font-medium"
-            }`}
-          >
-            {task.title}
-          </span>
-        </div>
-
-        {/* Action menu button for mobile */}
-        <div className="md:hidden relative" ref={dropdownRef}>
-          <motion.button
-            onClick={(e) => toggleTaskAction(task.id!, e)}
-            className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors duration-200"
-            whileTap={{ scale: 0.9 }}
-          >
-            <FaEllipsisH size={16} />
-          </motion.button>
-
-          <AnimatePresence>
-            {activeTaskAction === task.id && (
-              <motion.div
-                className="absolute z-10 right-0 top-10 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
-                variants={dropdownVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                <div className="py-1">
-                  <motion.div
-                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditTask(task);
-                      setActiveTaskAction(null);
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <FaEdit className="mr-3 text-blue-600" /> Edit
-                  </motion.div>
-                  <motion.div
-                    className="flex items-center px-4 py-3 text-sm text-red-700 hover:bg-gray-100 cursor-pointer font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteTask(task.id!);
-                      setActiveTaskAction(null);
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <FaTrash className="mr-3" /> Delete
-                  </motion.div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      <div className="hidden md:block text-sm text-gray-700 font-medium">
-        {formatDate(task.dueDate)}
-      </div>
-
-      <div className="hidden md:block">
-        <div className="relative">
-          <motion.span
-            className={`px-4 py-2 text-xs rounded-lg ${getStatusBadgeColor(
-              task.status
-            )} font-bold cursor-pointer flex items-center justify-center w-2/3 shadow-md`}
-            onClick={(e) => toggleStatusDropdown(task.id!, e)}
-            variants={statusBadgeVariants}
-            whileHover="hover"
-            whileTap="tap"
-          >
-            {task.status}
-            <FaChevronDown size={8} className="ml-2" />
-          </motion.span>
-
-          <AnimatePresence>
-            {statusDropdownTaskId === task.id && (
-              <motion.div
-                className="absolute z-20 left-0 mt-2 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
-                variants={dropdownVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                <div className="py-1">
-                  {(["TO-DO", "IN-PROGRESS", "COMPLETED"] as const).map(
-                    (statusOption) => (
+                  {tasksArray.length > 0 ? (
+                    tasksArray.map((task) => (
                       <motion.div
-                        key={statusOption}
-                        className={`px-4 py-3 hover:bg-gray-200 cursor-pointer text-sm transition-colors duration-200 ${
-                          task.status === statusOption
-                            ? "bg-gray-50 font-bold"
-                            : "font-medium"
+                        key={task.id}
+                        className={`grid grid-cols-1 md:grid-cols-4 border-b border-gray-300 last:border-b-0 bg-white hover:bg-gray-50 transition-all duration-200 p-5 ${
+                          selectedTasks.includes(task.id!)
+                            ? "bg-purple-100"
+                            : ""
                         }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStatusChange(task, statusOption);
-                          setStatusDropdownTaskId(null);
-                        }}
-                        whileTap={{ scale: 0.98 }}
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        layout
                       >
-                        <div className="flex items-center">
-                          <FaCircle
-                            size={10}
-                            className={`mr-3 ${getStatusCircleColor(
-                              statusOption
+                        <div className="flex items-center justify-between">
+                          {/* Left side with checkbox, status icon and title */}
+                          <div className="flex items-center">
+                            <motion.div
+                              className={`flex items-center justify-center w-6 h-6 rounded-md border-2 ${
+                                selectedTasks.includes(task.id!)
+                                  ? "bg-purple-700 border-purple-800"
+                                  : "border-gray-400"
+                              } mr-3 cursor-pointer shadow-md`}
+                              onClick={() => toggleTaskSelection(task.id!)}
+                              variants={checkboxVariants}
+                              animate={
+                                selectedTasks.includes(task.id!)
+                                  ? "checked"
+                                  : "unchecked"
+                              }
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              {selectedTasks.includes(task.id!) && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 15,
+                                  }}
+                                >
+                                  <PiCheckCircleFill
+                                    size={18}
+                                    className="text-white"
+                                  />
+                                </motion.div>
+                              )}
+                            </motion.div>
+                            <motion.div
+                              whileHover={{ scale: 1.2 }}
+                              transition={{ type: "spring", stiffness: 500 }}
+                            >
+                              <PiCheckCircleFill
+                                size={18}
+                                className={`mr-3 ${getStatusCircleColor(
+                                  task.status
+                                )}`}
+                              />
+                            </motion.div>
+                            <TbGridDots className="mr-3 text-gray-500 hidden md:block" />
+                            <span
+                              className={`${
+                                task.status === "COMPLETED"
+                                  ? "line-through text-gray-500"
+                                  : "text-gray-800 font-medium"
+                              }`}
+                            >
+                              {task.title}
+                            </span>
+                          </div>
+
+                          {/* Action menu button for mobile */}
+                          <div className="md:hidden relative" ref={dropdownRef}>
+                            <motion.button
+                              onClick={(e) => toggleTaskAction(task.id!, e)}
+                              className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors duration-200"
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              <FaEllipsisH size={16} />
+                            </motion.button>
+
+                            <AnimatePresence>
+                              {activeTaskAction === task.id && (
+                                <motion.div
+                                  className="absolute z-10 right-0 top-10 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
+                                  variants={dropdownVariants}
+                                  initial="hidden"
+                                  animate="visible"
+                                  exit="exit"
+                                >
+                                  <div className="py-1">
+                                    <motion.div
+                                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer font-medium"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onEditTask(task);
+                                        setActiveTaskAction(null);
+                                      }}
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      <FaEdit className="mr-3 text-blue-600" />{" "}
+                                      Edit
+                                    </motion.div>
+                                    <motion.div
+                                      className="flex items-center px-4 py-3 text-sm text-red-700 hover:bg-gray-100 cursor-pointer font-medium"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteTask(task.id!);
+                                        setActiveTaskAction(null);
+                                      }}
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      <FaTrash className="mr-3" /> Delete
+                                    </motion.div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+
+                        <div className="hidden md:block text-sm text-gray-700 font-medium">
+                          {formatDate(task.dueDate)}
+                        </div>
+
+                        <div className="hidden md:block">
+                          <div className="relative">
+                            <motion.span
+                              className={`px-4 py-2 text-xs rounded-lg ${getStatusBadgeColor(
+                                task.status
+                              )} font-bold cursor-pointer flex items-center justify-center w-2/3 shadow-md`}
+                              onClick={(e) => toggleStatusDropdown(task.id!, e)}
+                              variants={statusBadgeVariants}
+                              whileHover="hover"
+                              whileTap="tap"
+                            >
+                              {task.status}
+                              <FaChevronDown size={8} className="ml-2" />
+                            </motion.span>
+
+                            <AnimatePresence>
+                              {statusDropdownTaskId === task.id && (
+                                <motion.div
+                                  className="absolute z-20 left-0 mt-2 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
+                                  variants={dropdownVariants}
+                                  initial="hidden"
+                                  animate="visible"
+                                  exit="exit"
+                                >
+                                  <div className="py-1">
+                                    {(
+                                      [
+                                        "TO-DO",
+                                        "IN-PROGRESS",
+                                        "COMPLETED",
+                                      ] as const
+                                    ).map((statusOption) => (
+                                      <motion.div
+                                        key={statusOption}
+                                        className={`px-4 py-3 hover:bg-gray-200 cursor-pointer text-sm transition-colors duration-200 ${
+                                          task.status === statusOption
+                                            ? "bg-gray-50 font-bold"
+                                            : "font-medium"
+                                        }`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(
+                                            task,
+                                            statusOption
+                                          );
+                                          setStatusDropdownTaskId(null);
+                                        }}
+                                        whileTap={{ scale: 0.98 }}
+                                      >
+                                        <div className="flex items-center">
+                                          <FaCircle
+                                            size={10}
+                                            className={`mr-3 ${getStatusCircleColor(
+                                              statusOption
+                                            )}`}
+                                          />
+                                          {statusOption}
+                                        </div>
+                                      </motion.div>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+
+                        {/* Category and action menu - hidden on mobile */}
+                        <div className="hidden md:flex items-center justify-between">
+                          <span
+                            className={`text-sm font-bold ${getCategoryStyle(
+                              task.category
                             )}`}
-                          />
-                          {statusOption}
+                          >
+                            {task.category}
+                          </span>
+
+                          <div className="relative" ref={dropdownRef}>
+                            <motion.button
+                              onClick={(e) => toggleTaskAction(task.id!, e)}
+                              className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors duration-200"
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              <FaEllipsisH size={16} />
+                            </motion.button>
+
+                            <AnimatePresence>
+                              {activeTaskAction === task.id && (
+                                <motion.div
+                                  className="absolute z-10 right-0 top-10 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
+                                  variants={dropdownVariants}
+                                  initial="hidden"
+                                  animate="visible"
+                                  exit="exit"
+                                >
+                                  <div className="py-1">
+                                    <motion.div
+                                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer font-medium"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onEditTask(task);
+                                        setActiveTaskAction(null);
+                                      }}
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      <FaEdit className="mr-3 text-blue-600" />{" "}
+                                      Edit
+                                    </motion.div>
+                                    <motion.div
+                                      className="flex items-center px-4 py-3 text-sm text-red-700 hover:bg-gray-100 cursor-pointer font-medium"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteTask(task.id!);
+                                        setActiveTaskAction(null);
+                                      }}
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      <FaTrash className="mr-3" /> Delete
+                                    </motion.div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         </div>
                       </motion.div>
-                    )
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-gray-600 bg-gray-50 font-medium">
+                      {status === "TO-DO"
+                        ? "No Tasks in Todo"
+                        : status === "IN-PROGRESS"
+                        ? "No Tasks in Progress"
+                        : "No Completed Tasks"}
+                    </div>
                   )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Category and action menu - hidden on mobile */}
-      <div className="hidden md:flex items-center justify-between">
-        <span
-          className={`text-sm font-bold ${getCategoryStyle(task.category)}`}
-        >
-          {task.category}
-        </span>
-
-        <div className="relative" ref={dropdownRef}>
-          <motion.button
-            onClick={(e) => toggleTaskAction(task.id!, e)}
-            className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors duration-200"
-            whileTap={{ scale: 0.9 }}
-          >
-            <FaEllipsisH size={16} />
-          </motion.button>
-
-          <AnimatePresence>
-            {activeTaskAction === task.id && (
-              <motion.div
-                className="absolute z-10 right-0 top-10 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
-                variants={dropdownVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                <div className="py-1">
-                  <motion.div
-                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditTask(task);
-                      setActiveTaskAction(null);
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <FaEdit className="mr-3 text-blue-600" /> Edit
-                  </motion.div>
-                  <motion.div
-                    className="flex items-center px-4 py-3 text-sm text-red-700 hover:bg-gray-100 cursor-pointer font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteTask(task.id!);
-                      setActiveTaskAction(null);
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <FaTrash className="mr-3" /> Delete
-                  </motion.div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </motion.div>
-  ))
-) : (
-  <div className="p-8 text-center text-gray-600 bg-gray-50 font-medium">
-    {status === "TO-DO"
-      ? "No Tasks in Todo"
-      : status === "IN-PROGRESS"
-      ? "No Tasks in Progress"
-      : "No Completed Tasks"}
-  </div>
-)}
                 </motion.div>
 
                 {tasksArray.length > 5 && (

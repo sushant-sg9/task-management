@@ -5,16 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface LoaderProps {
   isLoading: boolean;
-  text?: string;
 }
 
-const TaskLoader: React.FC<LoaderProps> = ({
-  isLoading,
-  text = "Processing your task..."
-}) => {
-  const primaryColor = "#8B5CF6"; // Purple
-  const secondaryColor = "#EC4899"; // Pink for better contrast
-  const accentColor = "#6EE7B7"; // Mint accent
+const TaskLoader: React.FC<LoaderProps> = ({ isLoading }) => {
+  // Task management app color palette (inspired by Trello/ClickUp)
+  const primaryColor = "#5E6AD2"; // Blue/indigo (primary brand color)
+  const secondaryColor = "#26C0E2"; // Cyan (secondary accent)
+  const accentColor = "#9F7AEA"; // Purple (tertiary accent)
 
   return (
     <AnimatePresence>
@@ -23,109 +20,132 @@ const TaskLoader: React.FC<LoaderProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30 backdrop-blur-sm"
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-20 backdrop-blur-sm"
         >
           <motion.div
             initial={{ scale: 0.9, y: 10 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 10 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-xs w-full mx-4 flex flex-col items-center"
+            className="bg-white dark:bg-gray-800 rounded-md shadow-lg p-5 flex items-center justify-center"
             style={{
-              boxShadow: `0 10px 25px -5px rgba(139, 92, 246, 0.3)`
+              boxShadow: `0 4px 12px rgba(0, 0, 0, 0.08)`,
+              width: "80px",
+              height: "80px"
             }}
           >
-            {/* Compact loader animation */}
-            <div className="relative h-16 w-16 mb-4">
-              {/* Orbiting particles */}
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-full h-full"
-                  initial={{ rotate: i * 60 }}
-                  animate={{ rotate: i * 60 + 360 }}
-                  transition={{ 
-                    duration: 3 + i * 0.5, 
-                    repeat: Infinity, 
-                    ease: "linear",
-                    delay: i * 0.1
-                  }}
-                >
-                  <motion.div
-                    className="absolute w-1.5 h-1.5 rounded-full"
-                    style={{ 
-                      backgroundColor: i % 2 === 0 ? primaryColor : secondaryColor,
-                      top: 0,
-                      left: "50%",
-                      marginLeft: "-2px",
-                    }}
-                    animate={{
-                      opacity: [0.4, 1, 0.4],
-                      scale: [0.8, 1.2, 0.8]
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      delay: i * 0.1
-                    }}
-                  />
-                </motion.div>
-              ))}
-              
+            {/* Compact task card spinner */}
+            <div className="relative h-14 w-14">
+              {/* Main spinning card-like element */}
               <motion.div
-                className="absolute top-1 left-1 right-1 bottom-1 rounded-full"
+                className="absolute inset-0 rounded-md"
                 style={{ 
-                  background: `conic-gradient(from 0deg, ${primaryColor}, ${secondaryColor}, ${accentColor}, ${primaryColor})`,
+                  backgroundColor: primaryColor,
+                  opacity: 0.7
                 }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              />
-              
-              <motion.div 
-                className="absolute inset-0 m-auto w-10 h-10 bg-white dark:bg-gray-800 rounded-full" 
-                style={{ boxShadow: "inset 0 0 8px rgba(0,0,0,0.1)" }}
-              />
-              
-              <motion.div
-                className="absolute inset-0 m-auto w-4 h-4 rounded-full"
-                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
                 animate={{ 
-                  scale: [1, 1.3, 1],
-                  opacity: [0.7, 1, 0.7]
-                }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              />
-            </div>
-            
-            <div className="relative overflow-hidden mb-3">
-              <motion.p
-                className="text-center text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                {text}
-              </motion.p>
-              <motion.div 
-                className="absolute inset-0 w-full h-full"
-                style={{ 
-                  background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)`,
-                }}
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              />
-            </div>
-            
-            <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-              <motion.div
-                style={{ 
-                  background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${accentColor})` 
-                }}
-                className="h-full rounded-full"
-                animate={{
-                  width: ["0%", "100%"],
-                  x: [0, 0]
+                  rotate: 360,
+                  scale: [1, 0.9, 1]
                 }}
                 transition={{ 
-                  width: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }
+                  rotate: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+                  scale: { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 }}
               />
+              
+              {/* Secondary card offset slightly */}
+              <motion.div
+                className="absolute inset-0 rounded-md"
+                style={{ 
+                  backgroundColor: secondaryColor,
+                  opacity: 0.7,
+                  top: "3px",
+                  left: "3px",
+                  right: "-3px",
+                  bottom: "-3px"
+                }}
+                animate={{ 
+                  rotate: 360
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  ease: "easeInOut",
+                  delay: 0.2
+                }}
+              />
+              
+              {/* Tertiary card with different animation */}
+              <motion.div
+                className="absolute inset-0 rounded-md"
+                style={{ 
+                  backgroundColor: accentColor,
+                  opacity: 0.7,
+                  top: "-3px",
+                  left: "-3px",
+                  right: "3px",
+                  bottom: "3px"
+                }}
+                animate={{ 
+                  rotate: -360
+                }}
+                transition={{ 
+                  duration: 2.5, 
+                  repeat: Infinity, 
+                  ease: "easeInOut",
+                  delay: 0.1
+                }}
+              />
+              
+              {/* Task checkbox indicator in the center */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded bg-white dark:bg-gray-700 flex items-center justify-center"
+                animate={{ 
+                  scale: [0.8, 1, 0.8],
+                }}
+                transition={{ 
+                  duration: 1.2, 
+                  repeat: Infinity,
+                  ease: "easeInOut" 
+                }}
+              >
+                <motion.div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: primaryColor }}
+                  animate={{ 
+                    opacity: [0.5, 1, 0.5],
+                    scale: [0.8, 1.1, 0.8]
+                  }}
+                  transition={{ 
+                    duration: 1.5, 
+                    repeat: Infinity,
+                    ease: "easeInOut" 
+                  }}
+                />
+              </motion.div>
+              
+              {/* Mini task line indicators */}
+              {[...Array(2)].map((_, i) => (
+                <motion.div
+                  key={`line-${i}`}
+                  className="absolute h-1 rounded-full bg-white dark:bg-gray-700"
+                  style={{ 
+                    width: i === 0 ? "40%" : "30%",
+                    left: "25%",
+                    top: i === 0 ? "35%" : "55%",
+                    opacity: 0.6
+                  }}
+                  animate={{ 
+                    opacity: [0.4, 0.8, 0.4],
+                    width: i === 0 ? ["40%", "50%", "40%"] : ["30%", "40%", "30%"]
+                  }}
+                  transition={{ 
+                    duration: 1.5, 
+                    repeat: Infinity,
+                    delay: i * 0.3,
+                    ease: "easeInOut"
+                  }}
+                />
+              ))}
             </div>
           </motion.div>
         </motion.div>
