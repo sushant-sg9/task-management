@@ -2,8 +2,9 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { FiClipboard, FiSearch, FiChevronDown, FiLogOut, FiMenu, FiX } from "react-icons/fi";
+import { FiClipboard, FiSearch, FiChevronDown, FiLogOut, FiMenu, FiX, FiFilter } from "react-icons/fi";
 import { useAuth } from "../../Context/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
 
 type NavTabProps = {
   active: boolean;
@@ -31,30 +32,78 @@ const FilterDropdown = ({ label, options, value, onChange }: {
   options: string[];
   value: string;
   onChange: (value: string) => void;
-}) => (
-  <div className="relative">
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 appearance-none cursor-pointer"
-    >
-      <option value="">{label}</option>
-      {options.map((option) => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
-  </div>
-);
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between gap-2 px-4 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none w-32"
+      >
+        <span className="truncate">{value || label}</span>
+        <FiChevronDown className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg"
+          >
+            <ul className="py-1 max-h-60 overflow-auto">
+              <li>
+                <button
+                  onClick={() => {
+                    onChange("");
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-purple-50"
+                >
+                  {label}
+                </button>
+              </li>
+              {options.map((option) => (
+                <li key={option}>
+                  <button
+                    onClick={() => {
+                      onChange(option);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full px-4 py-2 text-sm text-left ${
+                      value === option
+                        ? "bg-purple-100 text-purple-700"
+                        : "text-gray-700 hover:bg-purple-50"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 type NavbarProps = {
   onViewChange?: (view: "list" | "board") => void;
   currentView?: "list" | "board";
   onSearch?: (query: string) => void;
+  onFilterChange?: (filters: { category: string; dueDate: string }) => void;
 };
 
-export default function Navbar({ onViewChange, currentView = "list", onSearch }: NavbarProps) {
+export default function Navbar({ 
+  onViewChange, 
+  currentView = "list", 
+  onSearch,
+  onFilterChange 
+}: NavbarProps) {
   const [activeTab, setActiveTab] = useState<"list" | "board">(currentView);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,6 +120,12 @@ export default function Navbar({ onViewChange, currentView = "list", onSearch }:
       setActiveTab(currentView);
     }
   }, [currentView]);
+
+  useEffect(() => {
+    if (onFilterChange) {
+      onFilterChange({ category: categoryFilter, dueDate: dueDateFilter });
+    }
+  }, [categoryFilter, dueDateFilter, onFilterChange]);
 
   const handleTabChange = (tab: "list" | "board") => {
     setActiveTab(tab);
@@ -91,6 +146,17 @@ export default function Navbar({ onViewChange, currentView = "list", onSearch }:
       onSearch(query);
     }
   };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+  };
+
+  const handleDueDateChange = (value: string) => {
+    setDueDateFilter(value);
+  };
+
+  const categoryOptions = ["Work", "Personal"];
+  const dueDateOptions = ["Today", "Last Day", "Last Week", "Last Month"];
 
   return (
     <div className="w-full">
@@ -168,8 +234,41 @@ export default function Navbar({ onViewChange, currentView = "list", onSearch }:
                 onClick={() => handleTabChange("board")}
               />
             </div>
-            <div className="flex flex-wrap items-center gap-2 md:gap-4 py-4">
-              <span className="text-sm text-gray-500">Filter by:</span>
+            
+            <div className="py-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-gray-500">Filter by:</span>
+                
+                <div className="flex flex-wrap gap-3">
+                  <FilterDropdown
+                    label="Category"
+                    options={categoryOptions}
+                    value={categoryFilter}
+                    onChange={handleCategoryChange}
+                  />
+                  
+                  <FilterDropdown
+                    label="Due Date"
+                    options={dueDateOptions}
+                    value={dueDateFilter}
+                    onChange={handleDueDateChange}
+                  />
+                  
+                  {(categoryFilter || dueDateFilter) && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      onClick={() => {
+                        setCategoryFilter("");
+                        setDueDateFilter("");
+                      }}
+                      className="px-3 py-1.5 text-xs text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 border border-purple-200"
+                    >
+                      Clear
+                    </motion.button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

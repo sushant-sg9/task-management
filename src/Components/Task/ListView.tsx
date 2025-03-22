@@ -19,11 +19,16 @@ import Loader from "../Utiles/Loader";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ListViewProps {
-  onEditTask: (task: Task) => void,
-  searchQuery: string
+  onEditTask: (task: Task) => void;
+  searchQuery: string;
+  filters?: { category: string; dueDate: string };
 }
 
-const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
+const ListView: React.FC<ListViewProps> = ({
+  onEditTask,
+  searchQuery,
+  filters = { category: "", dueDate: "" },
+}) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState({
@@ -75,6 +80,15 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
     }
   }, [user]);
 
+  useEffect(() => {
+    setFilter({
+      ...filter,
+      category: filters?.category || "",
+      dueDate: filters?.dueDate || "",
+      searchTerm: searchQuery || "",
+    });
+  }, [searchQuery, filters]);
+
   const loadTasks = async () => {
     setLoading(true);
     try {
@@ -125,13 +139,13 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
     const newErrors: {
       title?: string;
     } = {};
-    
-    if (!newTask.title || newTask.title.trim() === '') {
+
+    if (!newTask.title || newTask.title.trim() === "") {
       newErrors.title = "Title is required";
-      setErrors(newErrors); 
+      setErrors(newErrors);
       return;
     }
-  
+
     setLoading(true);
     try {
       const taskToCreate = {
@@ -180,7 +194,6 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
         setStatusDropdownTaskId(null);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -262,17 +275,64 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
   };
 
   const filterTasks = (tasksArray: Task[]) => {
-    return tasksArray.filter(task => {
-      const searchMatch = !searchQuery || 
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchQuery.toLowerCase());
-      return searchMatch;
+    return tasksArray.filter((task) => {
+      const searchMatch =
+        !filter.searchTerm ||
+        task.title.toLowerCase().includes(filter.searchTerm.toLowerCase()) ||
+        task.description
+          .toLowerCase()
+          .includes(filter.searchTerm.toLowerCase());
+
+      const categoryMatch =
+        !filter.category ||
+        task.category.toUpperCase() === filter.category.toUpperCase();
+
+      let dueDateMatch = true;
+      if (filter.dueDate) {
+        const taskDate = new Date(task.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        switch (filter.dueDate.toUpperCase()) {
+          case "TODAY":
+            dueDateMatch = isToday(taskDate);
+            break;
+          case "LAST DAY":
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            dueDateMatch =
+              taskDate.getDate() === yesterday.getDate() &&
+              taskDate.getMonth() === yesterday.getMonth() &&
+              taskDate.getFullYear() === yesterday.getFullYear();
+            break;
+          case "LAST WEEK":
+            const oneWeekAgo = new Date(today);
+            oneWeekAgo.setDate(today.getDate() - 7);
+            dueDateMatch = taskDate >= oneWeekAgo && taskDate <= today;
+            break;
+          case "LAST MONTH":
+            const oneMonthAgo = new Date(today);
+            oneMonthAgo.setMonth(today.getMonth() - 1);
+            dueDateMatch = taskDate >= oneMonthAgo && taskDate <= today;
+            break;
+          default:
+            dueDateMatch = true;
+        }
+      }
+
+      return searchMatch && categoryMatch && dueDateMatch;
     });
   };
 
-  const todoTasks = filterTasks(tasks.filter((task) => task.status === "TO-DO"))
-  const inProgressTasks = filterTasks(tasks.filter((task) => task.status === "IN-PROGRESS"))
-  const completedTasks = filterTasks(tasks.filter((task) => task.status === "COMPLETED"))
+  const todoTasks = filterTasks(
+    tasks.filter((task) => task.status === "TO-DO")
+  );
+  const inProgressTasks = filterTasks(
+    tasks.filter((task) => task.status === "IN-PROGRESS")
+  );
+  const completedTasks = filterTasks(
+    tasks.filter((task) => task.status === "COMPLETED")
+  );
 
   const getSectionColor = (status: string) => {
     switch (status) {
@@ -417,14 +477,14 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
 
     return (
       <motion.div
-        className="mb-6 rounded-xl shadow-xl border border-gray-300"
+        className="mb-6 rounded-xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
         <div className="grid grid-cols-1">
           <motion.div
-            className={`flex items-center justify-between p-5 ${getSectionHeaderColor(
+            className={` rounded-t-xl flex items-center justify-between p-5 ${getSectionHeaderColor(
               status
             )} cursor-pointer transition-all duration-200 ease-in-out`}
             onClick={(e) => toggleSection(status, e)}
@@ -463,13 +523,13 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                 exit="exit"
               >
                 {status === "TO-DO" && (
-                  <div className="p-4 border-b border-gray-300 bg-gray-50">
+                  <div className="p-4 bg-[#f1f1f1] border-b border-gray-300">
                     {!addingTask ? (
                       <motion.button
                         className="flex items-center text-purple-700 hover:text-purple-900 transition-colors duration-200 font-bold text-sm py-3 px-6 rounded-full hover:bg-purple-100 shadow-md border-2 border-purple-300"
                         onClick={() => {
                           setAddingTask(true);
-                          setErrors({}); 
+                          setErrors({});
                         }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -478,7 +538,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                       </motion.button>
                     ) : (
                       <motion.div
-                        className="bg-gray-50 rounded-xl shadow-lg p-6 border-2 border-gray-300"
+                        className="bg-gray-50 rounded-xl shadow-lg p-6"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
@@ -489,7 +549,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                             <motion.input
                               type="text"
                               placeholder="Task Title"
-                              className="w-full p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500 text-gray-800 placeholder-gray-500 shadow-md transition-all duration-200 bg-white hover:border-purple-400"
+                              className="w-full p-4 rounded-xl focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500 text-gray-800 placeholder-gray-500 shadow-md transition-all duration-200 bg-white hover:border-purple-400"
                               value={newTask.title}
                               onChange={(e) => {
                                 setNewTask({
@@ -528,7 +588,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                               </div>
                               <input
                                 type="date"
-                                className="w-full pl-12 p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500 shadow-md bg-white hover:border-purple-400 transition-all duration-200 text-gray-800"
+                                className="w-full pl-12 p-4 rounded-xl focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500 shadow-md bg-white hover:border-purple-400 transition-all duration-200 text-gray-800"
                                 value={newTask.dueDate}
                                 onChange={(e) =>
                                   setNewTask({
@@ -547,7 +607,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                               transition={{ delay: 0.3 }}
                             >
                               <button
-                                className="flex items-center justify-between w-full px-5 py-4 bg-white border-2 border-gray-300 rounded-xl hover:border-purple-400 transition-colors duration-200 shadow-md text-gray-800 focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500"
+                                className="flex items-center justify-between w-full px-5 py-4 bg-white rounded-xl hover:border-purple-400 transition-colors duration-200 shadow-md text-gray-800 focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -566,7 +626,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                               <AnimatePresence>
                                 {statusDropdownOpen && (
                                   <motion.div
-                                    className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-300 rounded-xl shadow-xl"
+                                    className="absolute z-10 w-full mt-2 bg-white rounded-xl shadow-xl"
                                     variants={dropdownVariants}
                                     initial="hidden"
                                     animate="visible"
@@ -613,7 +673,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                               transition={{ delay: 0.4 }}
                             >
                               <button
-                                className="flex items-center justify-between w-full px-5 py-4 bg-white border-2 border-gray-300 rounded-xl hover:border-purple-400 transition-colors duration-200 shadow-md text-gray-800 focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500"
+                                className="flex items-center justify-between w-full px-5 py-4 bg-white rounded-xl hover:border-purple-400 transition-colors duration-200 shadow-md text-gray-800 focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -634,7 +694,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                               <AnimatePresence>
                                 {categoryDropdownOpen && (
                                   <motion.div
-                                    className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-300 rounded-xl shadow-xl"
+                                    className="absolute z-10 w-full mt-2 bg-white rounded-xl shadow-xl"
                                     variants={dropdownVariants}
                                     initial="hidden"
                                     animate="visible"
@@ -681,7 +741,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                               ADD
                             </motion.button>
                             <motion.button
-                              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors duration-200 font-bold text-sm shadow-md border-2 border-gray-300"
+                              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors duration-200 font-bold text-sm shadow-md"
                               onClick={() => setAddingTask(false)}
                               whileHover={{
                                 scale: 1.05,
@@ -698,7 +758,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                   </div>
                 )}
                 <motion.div
-                  className="grid grid-cols-1"
+                  className="grid grid-cols-1 bg-white "
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
@@ -707,7 +767,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                     tasksArray.map((task) => (
                       <motion.div
                         key={task.id}
-                        className={`grid grid-cols-1 md:grid-cols-4 border-b border-gray-300 last:border-b-0 bg-white hover:bg-gray-50 transition-all duration-200 p-5 ${
+                        className={`grid grid-cols-1  border-b border-gray-300 md:grid-cols-4 last:border-b-0 bg-gray-100 hover:bg-gray-100 transition-all duration-200 px-4 py-3 ${
                           selectedTasks.includes(task.id!)
                             ? "bg-purple-100"
                             : ""
@@ -719,7 +779,6 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                         layout
                       >
                         <div className="flex items-center justify-between">
-                          {/* Left side with checkbox, status icon and title */}
                           <div className="flex items-center">
                             <motion.div
                               className={`flex items-center justify-center w-6 h-6 rounded-md border-2 ${
@@ -771,7 +830,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                                 task.status === "COMPLETED"
                                   ? "line-through text-gray-500"
                                   : "text-gray-800 font-medium"
-                              }`}
+                              } truncate w-40 block`}
                             >
                               {task.title}
                             </span>
@@ -790,7 +849,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                             <AnimatePresence>
                               {activeTaskAction === task.id && (
                                 <motion.div
-                                  className="absolute z-10 right-0 top-10 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
+                                  className="absolute z-10 right-0 top-10 bg-white rounded-xl shadow-xl w-40"
                                   variants={dropdownVariants}
                                   initial="hidden"
                                   animate="visible"
@@ -836,20 +895,20 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                             <motion.span
                               className={`px-4 py-2 text-xs rounded-lg ${getStatusBadgeColor(
                                 task.status
-                              )} font-bold cursor-pointer flex items-center justify-center w-2/3 shadow-md`}
+                              )} font-bold cursor-pointer flex items-center justify-start`}
                               onClick={(e) => toggleStatusDropdown(task.id!, e)}
                               variants={statusBadgeVariants}
-                              whileHover="hover"
+                            
                               whileTap="tap"
                             >
-                              {task.status}
-                              <FaChevronDown size={8} className="ml-2" />
+                              <span className="bg-gray-200 rounded-sm px-4 py-2">{task.status}</span>
+                              
                             </motion.span>
 
                             <AnimatePresence>
                               {statusDropdownTaskId === task.id && (
                                 <motion.div
-                                  className="absolute z-20 left-0 mt-2 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
+                                  className="absolute z-20 left-0 mt-2 bg-white rounded-xl shadow-xl w-40"
                                   variants={dropdownVariants}
                                   initial="hidden"
                                   animate="visible"
@@ -898,7 +957,6 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                           </div>
                         </div>
 
-                        {/* Category and action menu - hidden on mobile */}
                         <div className="hidden md:flex items-center justify-between">
                           <span
                             className={`text-sm font-bold ${getCategoryStyle(
@@ -920,7 +978,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                             <AnimatePresence>
                               {activeTaskAction === task.id && (
                                 <motion.div
-                                  className="absolute z-10 right-0 top-10 bg-white border-2 border-gray-300 rounded-xl shadow-xl w-40"
+                                  className="absolute z-10 right-0 top-10 bg-white rounded-xl shadow-xl w-40"
                                   variants={dropdownVariants}
                                   initial="hidden"
                                   animate="visible"
@@ -959,7 +1017,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                       </motion.div>
                     ))
                   ) : (
-                    <div className="p-8 text-center text-gray-600 bg-gray-50 font-medium">
+                    <div className="p-8 text-center text-gray-600 bg-gray-100 font-medium rounded-lg rounded-b-xl">
                       {status === "TO-DO"
                         ? "No Tasks in Todo"
                         : status === "IN-PROGRESS"
@@ -970,7 +1028,7 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
                 </motion.div>
 
                 {tasksArray.length > 5 && (
-                  <div className="p-4 text-center bg-gray-50 border-t border-gray-300">
+                  <div className="p-4 text-center bg-gray-50">
                     <button className="text-purple-700 hover:text-purple-900 text-sm font-bold transition-all duration-200 py-2 px-6 rounded-full hover:bg-purple-100 border-2 border-purple-300 shadow-md">
                       Load more
                     </button>
@@ -988,17 +1046,17 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
     <>
       {loading && <Loader isLoading={loading} />}
       <div className="px-4 sm:px-6 lg:px-8 py-6">
-        <div className="hidden md:grid grid-cols-12 gap-4 px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
-          <div className="col-span-4 text-xs font-medium uppercase text-gray-500">
+        <div className="hidden md:grid grid-cols-12 gap-4 px-3 py-2 bg-gray-50 rounded-t-lg">
+          <div className="col-span-3 text-sm font-semibold uppercase text-gray-500">
             Task name
           </div>
-          <div className="col-span-3 text-xs font-medium uppercase text-gray-500">
+          <div className="col-span-3 text-sm font-semibold uppercase text-gray-500">
             Due date
           </div>
-          <div className="col-span-3 text-xs font-medium uppercase text-gray-500">
+          <div className="col-span-3 text-sm font-semibold uppercase text-gray-500">
             Status
           </div>
-          <div className="col-span-2 text-xs font-medium uppercase text-gray-500">
+          <div className="col-span-2 text-sm font-semibold uppercase text-gray-500">
             Category
           </div>
         </div>
@@ -1009,81 +1067,90 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
         </div>
 
         {selectedTasks.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 flex justify-center items-center p-4">
-            <motion.div
-              className="bg-black text-white rounded-lg shadow-lg p-3 flex items-center justify-between max-w-md w-full mx-auto"
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            >
-              <div className="flex items-center">
-                <span className="font-medium mr-2 text-sm">
-                  {selectedTasks.length} Tasks Selected
-                </span>
-                <motion.button
-                  onClick={() => setSelectedTasks([])}
-                  className="text-gray-400 hover:text-white"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  ✕
-                </motion.button>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="relative" ref={multiSelectDropdownRef}>
-                  <motion.button
-                    onClick={() =>
-                      setMultiSelectStatusOpen(!multiSelectStatusOpen)
-                    }
-                    className="px-3 py-1.5 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors duration-150 text-xs font-medium"
-                    whileHover={{ scale: 1.03, backgroundColor: "#374151" }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    Status
-                  </motion.button>
-                  <AnimatePresence>
-                    {multiSelectStatusOpen && (
+  <div className="fixed bottom-0 left-0 right-0 flex justify-center items-center p-6">
+    <motion.div
+      className="bg-black text-white rounded-xl shadow-lg p-3 flex items-center justify-between max-w-md w-full mx-auto"
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 100, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}
+    >
+      <div className="flex items-center">
+        <span className="font-medium mr-2 text-sm">
+          {selectedTasks.length} Tasks Selected
+        </span>
+        <motion.button
+          onClick={() => setSelectedTasks([])}
+          className="text-gray-400 hover:text-white rounded-full h-6 w-6 flex items-center justify-center"
+          whileHover={{ scale: 1.2, backgroundColor: "rgba(255,255,255,0.1)" }}
+          whileTap={{ scale: 0.9 }}
+        >
+          ✕
+        </motion.button>
+      </div>
+      <div className="flex items-center space-x-3">
+        <div className="relative" ref={multiSelectDropdownRef}>
+          <motion.button
+            onClick={() =>
+              setMultiSelectStatusOpen(!multiSelectStatusOpen)
+            }
+            className="px-3 py-1.5 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors duration-150 text-xs font-medium"
+            whileHover={{ scale: 1.05, backgroundColor: "#374151" }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Status
+          </motion.button>
+          <AnimatePresence>
+            {multiSelectStatusOpen && (
+              <motion.div
+                className="absolute z-10 right-0 bottom-10 bg-white border border-gray-200 rounded-xl shadow-lg w-32 overflow-hidden"
+                variants={dropdownVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <div className="py-1">
+                  {(["TO-DO", "IN-PROGRESS", "COMPLETED"] as const).map(
+                    (statusOption) => (
                       <motion.div
-                        className="absolute z-10 right-0 bottom-10 bg-white border border-gray-200 rounded-lg shadow-lg w-32 overflow-hidden"
-                        variants={dropdownVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
+                        key={statusOption}
+                        className="px-3 py-2 hover:bg-gray-50 text-gray-800 cursor-pointer text-xs transition-colors duration-150"
+                        onClick={() =>
+                          handleBulkStatusChange(statusOption)
+                        }
+                        whileHover={{ 
+                          backgroundColor: "#F3F4F6", 
+                          x: 3,
+                          fontWeight: "bold" 
+                        }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <div className="py-1">
-                          {(["TO-DO", "IN-PROGRESS", "COMPLETED"] as const).map(
-                            (statusOption) => (
-                              <motion.div
-                                key={statusOption}
-                                className="px-3 py-2 hover:bg-gray-50 text-gray-800 cursor-pointer text-xs transition-colors duration-150"
-                                onClick={() =>
-                                  handleBulkStatusChange(statusOption)
-                                }
-                                whileHover={{ backgroundColor: "#F3F4F6" }}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                {statusOption}
-                              </motion.div>
-                            )
-                          )}
-                        </div>
+                        {statusOption}
                       </motion.div>
-                    )}
-                  </AnimatePresence>
+                    )
+                  )}
                 </div>
-                <motion.button
-                  onClick={handleDeleteSelectedTasks}
-                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-150 text-xs font-medium"
-                  whileHover={{ scale: 1.03, backgroundColor: "#DC2626" }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  Delete
-                </motion.button>
-              </div>
-            </motion.div>
-          </div>
-        )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        <motion.button
+          onClick={handleDeleteSelectedTasks}
+          className="px-3 py-1.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-150 text-xs font-medium"
+          whileHover={{ 
+            scale: 1.05, 
+            backgroundColor: "#DC2626",
+            boxShadow: "0 0 8px rgba(220,38,38,0.5)" 
+          }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Delete
+        </motion.button>
+      </div>
+    </motion.div>
+  </div>
+)}
       </div>
     </>
   );

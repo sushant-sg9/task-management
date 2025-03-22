@@ -12,6 +12,7 @@ const Dashboard: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({ category: "", dueDate: "" });
 
   useEffect(() => {
     const handleOpenAddTaskModal = () => {
@@ -27,11 +28,16 @@ const Dashboard: React.FC = () => {
   const handleViewChange = (newView: 'list' | 'board') => {
     setView(newView);
   };
+  
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
+  
+  const handleFilterChange = (newFilters: { category: string; dueDate: string }) => {
+    setFilters(newFilters);
+  };
+  
   const handleTaskCreated = () => {
-    // Refresh the task list or board view
     window.location.reload();
   };
 
@@ -44,17 +50,22 @@ const Dashboard: React.FC = () => {
   const renderView = () => {
     switch (view) {
       case 'list':
-        return <TaskList onEditTask={handleEditTask} searchQuery={searchQuery} />;
+        return <TaskList onEditTask={handleEditTask} searchQuery={searchQuery} filters={filters} />;
       case 'board':
-        return <Board onEditTask={handleEditTask} searchQuery={searchQuery} />;
+        return <Board onEditTask={handleEditTask} searchQuery={searchQuery} filters={filters} />;
       default:
-        return <TaskList onEditTask={handleEditTask} searchQuery={searchQuery} />;
+        return <TaskList onEditTask={handleEditTask} searchQuery={searchQuery} filters={filters} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onViewChange={handleViewChange} currentView={view}   onSearch={handleSearch} />
+      <Navbar 
+        onViewChange={handleViewChange} 
+        currentView={view} 
+        onSearch={handleSearch} 
+        onFilterChange={handleFilterChange}
+      />
       
       <main className="container mx-auto py-6">
         {renderView()}
