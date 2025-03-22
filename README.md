@@ -33,7 +33,7 @@ Check out the live demo: https://task-management-alpha-liart.vercel.app/
 1. Clone the repository:
    ```
    git clone https://github.com/sushant-sg9/task-management
-   cd taskmaster
+   cd task-management
    ```
 
 2. Install dependencies:
