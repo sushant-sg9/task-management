@@ -113,7 +113,7 @@ const TaskCard: React.FC<{
       isDragging
         ? "shadow-lg ring-2 ring-blue-500 border-blue-200"
         : "border-gray-200"
-    } cursor-grab`}
+    } cursor-pointer`}
   >
     <div className="flex justify-between items-center pb-4">
       <h3
