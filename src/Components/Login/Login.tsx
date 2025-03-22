@@ -3,6 +3,7 @@ import { FaClipboardList } from "react-icons/fa"
 import { FcGoogle } from "react-icons/fc"
 import { useAuth } from "../../Context/AuthContext"
 import { Navigate } from "react-router-dom"
+import TaskImg from "../../assets/task.png"
 
 const LoginPage: React.FC = () => {
   const { user, signInWithGoogle } = useAuth()
@@ -38,7 +39,7 @@ const LoginPage: React.FC = () => {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-[85%] max-w-2xl relative z-10">
             <img
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/task-MQFvXoH6RlqqTZGUujM6l1fRV8evPQ.png"
+              src={TaskImg}
               alt="TaskBuddy App Preview"
               className="w-full h-auto rounded-lg shadow-xl object-contain max-h-[90vh]"
             />

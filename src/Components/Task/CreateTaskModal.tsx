@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  ChangeEvent,
-  FormEvent,
-  useRef,
-} from "react";
+import React, { useState, useEffect, ChangeEvent, FormEvent, useRef } from "react";
 import { useAuth } from "../../Context/AuthContext";
 import { taskService, Task } from "../../services/taskService";
 import {
@@ -15,7 +9,6 @@ import {
   FaTimes,
   FaUpload,
   FaCalendarAlt,
-  FaClock,
 } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { BiHistory } from "react-icons/bi";
@@ -69,9 +62,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [descriptionMode, setDescriptionMode] = useState<"edit" | "preview">(
-    "edit"
-  );
+  const [descriptionMode, setDescriptionMode] = useState<"edit" | "preview">("edit");
 
   useEffect(() => {
     if (task) {
@@ -85,15 +76,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       });
       setImagePreview(task.attachment || null);
     } else {
-      setFormData({
-        title: "",
-        description: "",
-        dueDate: "",
-        category: "WORK",
-        status: "TO-DO",
-        attachment: "",
-      });
-      setImagePreview(null);
+      resetForm();
     }
     setActiveTab("details");
   }, [task, isOpen]);
@@ -101,10 +84,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-
-      if (modalRef.current) {
-        modalRef.current.classList.add("animate-in");
-      }
+      modalRef.current?.classList.add("animate-in");
     } else {
       document.body.style.overflow = "";
     }
@@ -150,22 +130,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     try {
       if (task?.id) {
         await taskService.updateTask(task.id, {
-          title: formData.title,
-          description: formData.description,
-          dueDate: formData.dueDate,
-          category: formData.category,
-          status: formData.status,
-          attachment: formData.attachment,
+          ...formData,
           updatedAt: new Date().toISOString(),
         });
       } else {
         const newTask: Omit<Task, "id"> = {
-          title: formData.title,
-          description: formData.description,
-          dueDate: formData.dueDate,
-          category: formData.category,
-          status: formData.status,
-          attachment: formData.attachment,
+          ...formData,
           userId: user.uid,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -211,7 +181,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     const end = textarea.selectionEnd;
     const selectedText = textarea.value.substring(start, end);
     
-    // If no text is selected, create placeholder with cursor in the middle
     const textToFormat = selectedText.length > 0 ? selectedText : "text";
     
     let formattedText = "";
@@ -269,19 +238,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "TO-DO":
-        return "To Do";
-      case "IN-PROGRESS":
-        return "In Progress";
-      case "COMPLETED":
-        return "Completed";
-      default:
-        return status;
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString("en-US", {
@@ -299,7 +255,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       case "CREATED":
         return <HiOutlineDocumentText className="text-green-500" />;
       case "UPDATED":
-        return <FaClock className="text-blue-500" />;
+        return <FaCalendarAlt className="text-blue-500" />;
       case "STATUS_CHANGED":
         return <BiHistory className="text-amber-500" />;
       default:
@@ -320,7 +276,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     }
   };
 
-  const hasActivities = task && task.activities && task.activities.length > 0;
+  const hasActivities = task?.activities && task.activities.length > 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm transition-all duration-300 p-3 sm:p-5">
@@ -432,14 +388,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                         <FaListOl className="text-gray-600" />
                       </button>
 
-                      <div className="ml-auto flex items-center">
+                      <div className="ml-auto">
                         <button
                           type="button"
-                          onClick={() =>
-                            setDescriptionMode(
-                              descriptionMode === "edit" ? "preview" : "edit"
-                            )
-                          }
+                          onClick={() => setDescriptionMode(
+                            descriptionMode === "edit" ? "preview" : "edit"
+                          )}
                           className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                             descriptionMode === "preview"
                               ? "bg-purple-100 text-purple-700"
@@ -651,7 +605,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </form>
           </div>
 
-          {/* Activity Section - Only show if there are activities */}
           {hasActivities && (
             <div
               className={`w-full lg:w-80 xl:w-80 lg:border-l lg:max-h-[90vh] bg-gray-50 overflow-y-auto ${

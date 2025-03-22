@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../Context/AuthContext';
 import Navbar from './Navbar';
 import TaskList from '../Task/ListView';
 import Board from '../Task/BoardView';
@@ -7,7 +6,6 @@ import CreateTaskModal from '../Task/CreateTaskModal';
 import { Task } from '../../services/taskService';
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
   const [view, setView] = useState<'list' | 'board'>('list');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -42,7 +40,6 @@ const Dashboard: React.FC = () => {
   };
 
   const handleEditTask = (task: Task) => {
-    console.log(task)
     setEditingTask(task);
     setIsCreateModalOpen(true);
   };

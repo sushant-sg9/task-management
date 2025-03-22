@@ -5,16 +5,13 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
-  DragOverEvent,
-  MouseSensor,
-  TouchSensor,
-  useDraggable,
   useDroppable,
 } from "@dnd-kit/core";
 import {
@@ -24,12 +21,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  FiPlusCircle,
-  FiMoreHorizontal,
-  FiCalendar,
-  FiPaperclip,
-} from "react-icons/fi";
+import { FiMoreHorizontal } from "react-icons/fi";
 import { format } from "date-fns";
 import Loader from "../Utiles/Loader"
 
@@ -76,24 +68,7 @@ const TaskCard: React.FC<{
   onEdit: () => void;
   onDelete: () => void;
   isDragging?: boolean;
-}> = ({ task, onEdit, onDelete, isDragging = false }) => {
-  const getCategoryColor = (category: string) => {
-    return category === "WORK" ? "bg-blue-600" : "bg-purple-600";
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "TO-DO":
-        return "bg-gray-200 text-gray-800";
-      case "IN-PROGRESS":
-        return "bg-amber-200 text-amber-800";
-      case "COMPLETED":
-        return "bg-emerald-200 text-emerald-800";
-      default:
-        return "bg-gray-200 text-gray-800";
-    }
-  };
-
+}> = ({ task, isDragging = false }) => {
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "MMM dd");
@@ -103,41 +78,39 @@ const TaskCard: React.FC<{
   };
 
   return (
-    <>
-  <motion.div
-    layout
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -10 }}
-    className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 border ${
-      isDragging
-        ? "shadow-lg ring-2 ring-blue-500 border-blue-200"
-        : "border-gray-200"
-    } cursor-pointer`}
-  >
-    <div className="flex justify-between items-center pb-4">
-      <h3
-        className={`${
-          task.status === "COMPLETED"
-            ? "line-through text-gray-400"
-            : "text-gray-800 font-medium mb-2.5 truncate line-clamp-2 text-base"
-        } truncate w-40 block text-lg`}
-      >
-        {task.title}
-      </h3>
-      <button className="text-gray-400 hover:text-gray-600">
-        <FiMoreHorizontal size={16} />
-      </button>
-    </div>
-    
-    <div className="mt-2">
-      <div className="flex justify-between items-center">
-        <span className="text-xs text-gray-500">{task.category}</span>
-        <span className="text-xs text-gray-500">{formatDate(task.dueDate)}</span>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 border ${
+        isDragging
+          ? "shadow-lg ring-2 ring-blue-500 border-blue-200"
+          : "border-gray-200"
+      } cursor-pointer`}
+    >
+      <div className="flex justify-between items-center pb-4">
+        <h3
+          className={`${
+            task.status === "COMPLETED"
+              ? "line-through text-gray-400"
+              : "text-gray-800 font-medium mb-2.5 truncate line-clamp-2 text-base"
+          } truncate w-40 block text-lg`}
+        >
+          {task.title}
+        </h3>
+        <button className="text-gray-400 hover:text-gray-600">
+          <FiMoreHorizontal size={16} />
+        </button>
       </div>
-    </div>
-  </motion.div>
-</>
+      
+      <div className="mt-2">
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-gray-500">{task.category}</span>
+          <span className="text-xs text-gray-500">{formatDate(task.dueDate)}</span>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
@@ -465,8 +438,6 @@ const BoardView: React.FC<BoardViewProps> = ({
   return (
     <> {loading && <Loader isLoading={loading}/>}
     <div className="container mx-auto px-4 py-6">
-     
-
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

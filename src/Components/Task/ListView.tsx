@@ -767,7 +767,7 @@ const ListView: React.FC<ListViewProps> = ({
                     tasksArray.map((task) => (
                       <motion.div
                         key={task.id}
-                        className={`grid grid-cols-1  border-b border-gray-300 md:grid-cols-4 last:border-b-0 bg-gray-100 hover:bg-gray-100 transition-all duration-200 px-4 py-3 ${
+                        className={`grid grid-cols-1 border-b border-gray-300 md:grid-cols-4 last:border-b-0 bg-gray-100 hover:bg-gray-100 transition-all duration-200 px-4 py-1 ${
                           selectedTasks.includes(task.id!)
                             ? "bg-purple-100"
                             : ""
@@ -886,7 +886,7 @@ const ListView: React.FC<ListViewProps> = ({
                           </div>
                         </div>
 
-                        <div className="hidden md:block text-sm text-gray-700 font-medium">
+                        <div className="hidden md:block flex items-center py-3 text-sm text-gray-700 font-medium">
                           {formatDate(task.dueDate)}
                         </div>
 
