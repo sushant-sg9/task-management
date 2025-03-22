@@ -1,4 +1,10 @@
-import React, { useState, useEffect, ChangeEvent, FormEvent, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  FormEvent,
+  useRef,
+} from "react";
 import { useAuth } from "../../Context/AuthContext";
 import { taskService, Task } from "../../services/taskService";
 import {
@@ -9,6 +15,7 @@ import {
   FaTimes,
   FaUpload,
   FaCalendarAlt,
+  FaClock,
 } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { BiHistory } from "react-icons/bi";
@@ -62,7 +69,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [descriptionMode, setDescriptionMode] = useState<"edit" | "preview">("edit");
+  const [descriptionMode, setDescriptionMode] = useState<"edit" | "preview">(
+    "edit"
+  );
 
   useEffect(() => {
     if (task) {
@@ -76,7 +85,15 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       });
       setImagePreview(task.attachment || null);
     } else {
-      resetForm();
+      setFormData({
+        title: "",
+        description: "",
+        dueDate: "",
+        category: "WORK",
+        status: "TO-DO",
+        attachment: "",
+      });
+      setImagePreview(null);
     }
     setActiveTab("details");
   }, [task, isOpen]);
@@ -84,7 +101,10 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      modalRef.current?.classList.add("animate-in");
+
+      if (modalRef.current) {
+        modalRef.current.classList.add("animate-in");
+      }
     } else {
       document.body.style.overflow = "";
     }
@@ -130,12 +150,22 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     try {
       if (task?.id) {
         await taskService.updateTask(task.id, {
-          ...formData,
+          title: formData.title,
+          description: formData.description,
+          dueDate: formData.dueDate,
+          category: formData.category,
+          status: formData.status,
+          attachment: formData.attachment,
           updatedAt: new Date().toISOString(),
         });
       } else {
         const newTask: Omit<Task, "id"> = {
-          ...formData,
+          title: formData.title,
+          description: formData.description,
+          dueDate: formData.dueDate,
+          category: formData.category,
+          status: formData.status,
+          attachment: formData.attachment,
           userId: user.uid,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -173,57 +203,58 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const formatText = (format: "bold" | "italic" | "bullet" | "number") => {
-    if (!descriptionRef.current) return;
+ const formatText = (format: "bold" | "italic" | "bullet" | "number") => {
+  if (!descriptionRef.current) return;
+
+  const textarea = descriptionRef.current;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selectedText = textarea.value.substring(start, end);
   
-    const textarea = descriptionRef.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = textarea.value.substring(start, end);
-    
-    const textToFormat = selectedText.length > 0 ? selectedText : "text";
-    
-    let formattedText = "";
-    let cursorPosition = 0;
+  // If no text is selected, create placeholder with cursor in the middle
+  const textToFormat = selectedText.length > 0 ? selectedText : "text";
   
-    switch (format) {
-      case "bold":
-        formattedText = `**${textToFormat}**`;
-        cursorPosition = selectedText.length > 0 ? start + textToFormat.length + 4 : start + 2;
-        break;
-      case "italic":
-        formattedText = `*${textToFormat}*`;
-        cursorPosition = selectedText.length > 0 ? start + textToFormat.length + 2 : start + 1;
-        break;
-      case "bullet":
-        formattedText = `\n- ${textToFormat}`;
-        cursorPosition = start + textToFormat.length + 3;
-        break;
-      case "number":
-        formattedText = `\n1. ${textToFormat}`;
-        cursorPosition = start + textToFormat.length + 4;
-        break;
+  let formattedText = "";
+  let cursorPosition = 0;
+
+  switch (format) {
+    case "bold":
+      formattedText = `**${textToFormat}**`;
+      cursorPosition = selectedText.length > 0 ? start + textToFormat.length + 4 : start + 2;
+      break;
+    case "italic":
+      formattedText = `*${textToFormat}*`;
+      cursorPosition = selectedText.length > 0 ? start + textToFormat.length + 2 : start + 1;
+      break;
+    case "bullet":
+      formattedText = `\n- ${textToFormat}`;
+      cursorPosition = start + textToFormat.length + 3;
+      break;
+    case "number":
+      formattedText = `\n1. ${textToFormat}`;
+      cursorPosition = start + textToFormat.length + 4;
+      break;
+  }
+
+  const newValue =
+    textarea.value.substring(0, start) +
+    formattedText +
+    textarea.value.substring(end);
+
+  setFormData((prev) => ({ ...prev, description: newValue }));
+
+  setTimeout(() => {
+    textarea.focus();
+    if (selectedText.length > 0) {
+      textarea.setSelectionRange(
+        start + formattedText.length,
+        start + formattedText.length
+      );
+    } else {
+      textarea.setSelectionRange(cursorPosition, cursorPosition);
     }
-  
-    const newValue =
-      textarea.value.substring(0, start) +
-      formattedText +
-      textarea.value.substring(end);
-  
-    setFormData((prev) => ({ ...prev, description: newValue }));
-  
-    setTimeout(() => {
-      textarea.focus();
-      if (selectedText.length > 0) {
-        textarea.setSelectionRange(
-          start + formattedText.length,
-          start + formattedText.length
-        );
-      } else {
-        textarea.setSelectionRange(cursorPosition, cursorPosition);
-      }
-    }, 0);
-  };
+  }, 0);
+};
 
   const getStatusColor = (status: TaskStatus) => {
     switch (status) {
@@ -237,6 +268,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         return "bg-gray-50 text-gray-700 border-gray-300";
     }
   };
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -255,7 +287,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       case "CREATED":
         return <HiOutlineDocumentText className="text-green-500" />;
       case "UPDATED":
-        return <FaCalendarAlt className="text-blue-500" />;
+        return <FaClock className="text-blue-500" />;
       case "STATUS_CHANGED":
         return <BiHistory className="text-amber-500" />;
       default:
@@ -276,7 +308,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     }
   };
 
-  const hasActivities = task?.activities && task.activities.length > 0;
+  const hasActivities = task && task.activities && task.activities.length > 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm transition-all duration-300 p-3 sm:p-5">
@@ -388,12 +420,14 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                         <FaListOl className="text-gray-600" />
                       </button>
 
-                      <div className="ml-auto">
+                      <div className="ml-auto flex items-center">
                         <button
                           type="button"
-                          onClick={() => setDescriptionMode(
-                            descriptionMode === "edit" ? "preview" : "edit"
-                          )}
+                          onClick={() =>
+                            setDescriptionMode(
+                              descriptionMode === "edit" ? "preview" : "edit"
+                            )
+                          }
                           className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                             descriptionMode === "preview"
                               ? "bg-purple-100 text-purple-700"

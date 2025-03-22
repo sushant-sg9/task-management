@@ -5,13 +5,13 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
+  MouseSensor,
+  TouchSensor,
   useDroppable,
 } from "@dnd-kit/core";
 import {
@@ -21,9 +21,9 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiMoreHorizontal } from "react-icons/fi";
+import { FiMoreHorizontal, FiCalendar, FiPaperclip } from "react-icons/fi";
 import { format } from "date-fns";
-import Loader from "../Utiles/Loader"
+import Loader from "../Utiles/Loader";
 
 const SortableTaskCard: React.FC<{
   task: Task;
@@ -68,7 +68,24 @@ const TaskCard: React.FC<{
   onEdit: () => void;
   onDelete: () => void;
   isDragging?: boolean;
-}> = ({ task, isDragging = false }) => {
+}> = ({ task, onEdit, onDelete, isDragging = false }) => {
+  const getCategoryColor = (category: string) => {
+    return category === "WORK" ? "bg-blue-600" : "bg-purple-600";
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "TO-DO":
+        return "bg-gray-200 text-gray-800";
+      case "IN-PROGRESS":
+        return "bg-amber-200 text-amber-800";
+      case "COMPLETED":
+        return "bg-emerald-200 text-emerald-800";
+      default:
+        return "bg-gray-200 text-gray-800";
+    }
+  };
+
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "MMM dd");
@@ -89,30 +106,57 @@ const TaskCard: React.FC<{
           : "border-gray-200"
       } cursor-pointer`}
     >
-      <div className="flex justify-between items-center pb-4">
-        <h3
-          className={`${
-            task.status === "COMPLETED"
-              ? "line-through text-gray-400"
-              : "text-gray-800 font-medium mb-2.5 truncate line-clamp-2 text-base"
-          } truncate w-40 block text-lg`}
-        >
-          {task.title}
-        </h3>
-        <button className="text-gray-400 hover:text-gray-600">
-          <FiMoreHorizontal size={16} />
-        </button>
-      </div>
-      
-      <div className="mt-2">
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-500">{task.category}</span>
-          <span className="text-xs text-gray-500">{formatDate(task.dueDate)}</span>
+      <div className="flex justify-between items-start mb-3">
+      <h3
+        className={`${
+          task.status === "COMPLETED"
+            ? "line-through text-gray-400"
+            : "text-gray-800 font-medium mb-2.5 truncate line-clamp-2 text-base"
+        } truncate w-40 block text-xl mb-4`}
+      >
+        {task.title}
+      </h3>
+        <div className="relative group">
+          <button className="text-gray-500 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100 transition-colors">
+            <FiMoreHorizontal size={16} />
+          </button>
+          <div className="absolute right-0 top-5 mt-1 w-40 bg-white shadow-xl rounded-lg hidden group-hover:block z-10 border border-gray-100">
+            <div className="py-1">
+              <button
+                onClick={onEdit}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 font-medium"
+              >
+                Edit
+              </button>
+              <button
+                onClick={onDelete}
+                className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-medium"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      
+
+
+    
+
+        <div className="mt-2">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-500">{task.category}</span>
+            <span className="text-xs text-gray-500">
+              {formatDate(task.dueDate)}
+            </span>
+          </div>
+        </div>
     </motion.div>
   );
 };
+
+
 
 const DroppableColumn: React.FC<{
   id: string;
@@ -144,17 +188,15 @@ const DroppableColumn: React.FC<{
       <div
         className={`${color.header} p-4 flex justify-between items-center border-b ${color.border}`}
       >
-        <h3 className={`text-base font-semibold rounded-lg py-1 px-3 ${color.textBg}`}>
-          {id}{" "}
-          <span className="text-sm">
-            ({tasks.length})
-          </span>
+        <h3
+          className={`text-base font-semibold rounded-lg py-1 px-3 ${color.textBg}`}
+        >
+          {id} <span className="text-sm">({tasks.length})</span>
         </h3>
         <button
           onClick={onAddTask}
           className={`p-2 rounded-full hover:bg-white/50 transition-colors ${color.icon}`}
-        >
-        </button>
+        ></button>
       </div>
       <div
         ref={setNodeRef}
@@ -415,7 +457,7 @@ const BoardView: React.FC<BoardViewProps> = ({
       header: "bg-gray-100",
       text: "text-gray-800",
       icon: "text-gray-700 hover:text-gray-900",
-      textBg:"bg-purple-200"
+      textBg: "bg-purple-200",
     },
     "IN-PROGRESS": {
       bg: "bg-gray-100",
@@ -423,60 +465,62 @@ const BoardView: React.FC<BoardViewProps> = ({
       header: "bg-gray-100",
       text: "text-amber-800",
       icon: "text-amber-700 hover:text-amber-900",
-      textBg:"bg-amber-200"
+      textBg: "bg-amber-200",
     },
-    "COMPLETED": {
+    COMPLETED: {
       bg: "bg-gray-100",
       border: "border-0",
       header: "bg-gray-100",
       text: "text-emerald-800",
       icon: "text-emerald-700 hover:text-emerald-900",
-      textBg:"bg-emerald-200"
+      textBg: "bg-emerald-200",
     },
   };
 
   return (
-    <> {loading && <Loader isLoading={loading}/>}
-    <div className="container mx-auto px-4 py-6">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {COLUMNS.map((status) => {
-            const columnTasks = getColumnTasks(status);
-            const colors = columnColors[status];
+    <>
+      {" "}
+      {loading && <Loader isLoading={loading} />}
+      <div className="container mx-auto px-4 py-6">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {COLUMNS.map((status) => {
+              const columnTasks = getColumnTasks(status);
+              const colors = columnColors[status];
 
-            return (
-              <DroppableColumn
-                key={status}
-                id={status}
-                tasks={columnTasks}
-                onEdit={onEditTask}
-                onDelete={handleDeleteTask}
-                onAddTask={() => onAddTask?.(status)}
-                color={colors}
-              />
-            );
-          })}
-        </div>
+              return (
+                <DroppableColumn
+                  key={status}
+                  id={status}
+                  tasks={columnTasks}
+                  onEdit={onEditTask}
+                  onDelete={handleDeleteTask}
+                  onAddTask={() => onAddTask?.(status)}
+                  color={colors}
+                />
+              );
+            })}
+          </div>
 
-        <DragOverlay>
-          {activeTask && (
-            <div className="transform-none">
-              <TaskCard
-                task={activeTask}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                isDragging={true}
-              />
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
-    </div>
+          <DragOverlay>
+            {activeTask && (
+              <div className="transform-none">
+                <TaskCard
+                  task={activeTask}
+                  onEdit={() => {}}
+                  onDelete={() => {}}
+                  isDragging={true}
+                />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      </div>
     </>
   );
 };

@@ -220,6 +220,7 @@ const ListView: React.FC<ListViewProps> = ({
       await Promise.all(updatePromises);
       await loadTasks();
       setMultiSelectStatusOpen(false);
+      setSelectedTasks([])
     } catch (error) {
       console.error("Error updating multiple task statuses:", error);
     } finally {
@@ -767,7 +768,7 @@ const ListView: React.FC<ListViewProps> = ({
                     tasksArray.map((task) => (
                       <motion.div
                         key={task.id}
-                        className={`grid grid-cols-1 border-b border-gray-300 md:grid-cols-4 last:border-b-0 bg-gray-100 hover:bg-gray-100 transition-all duration-200 px-4 py-1 ${
+                        className={`grid grid-cols-1  border-b border-gray-300 md:grid-cols-4 last:border-b-0 bg-gray-100 hover:bg-gray-100 transition-all duration-200 px-4 py-3 ${
                           selectedTasks.includes(task.id!)
                             ? "bg-purple-100"
                             : ""
@@ -886,7 +887,7 @@ const ListView: React.FC<ListViewProps> = ({
                           </div>
                         </div>
 
-                        <div className="hidden md:block flex items-center py-3 text-sm text-gray-700 font-medium">
+                        <div className="hidden md:block text-sm text-gray-700 font-medium">
                           {formatDate(task.dueDate)}
                         </div>
 
@@ -898,11 +899,11 @@ const ListView: React.FC<ListViewProps> = ({
                               )} font-bold cursor-pointer flex items-center justify-start`}
                               onClick={(e) => toggleStatusDropdown(task.id!, e)}
                               variants={statusBadgeVariants}
-                            
                               whileTap="tap"
                             >
-                              <span className="bg-gray-200 rounded-sm px-4 py-2">{task.status}</span>
-                              
+                              <span className="bg-gray-200 rounded-sm p-2">
+                                {task.status}
+                              </span>
                             </motion.span>
 
                             <AnimatePresence>
@@ -1047,16 +1048,16 @@ const ListView: React.FC<ListViewProps> = ({
       {loading && <Loader isLoading={loading} />}
       <div className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="hidden md:grid grid-cols-12 gap-4 px-3 py-2 bg-gray-50 rounded-t-lg">
-          <div className="col-span-3 text-sm font-semibold uppercase text-gray-500">
+          <div className="col-span-3 text-md font-medium uppercase text-gray-500">
             Task name
           </div>
-          <div className="col-span-3 text-sm font-semibold uppercase text-gray-500">
+          <div className="col-span-3 text-md font-medium uppercase text-gray-500">
             Due date
           </div>
-          <div className="col-span-3 text-sm font-semibold uppercase text-gray-500">
+          <div className="col-span-3 text-md font-medium uppercase text-gray-500">
             Status
           </div>
-          <div className="col-span-2 text-sm font-semibold uppercase text-gray-500">
+          <div className="col-span-2 text-md font-medium uppercase text-gray-500">
             Category
           </div>
         </div>
@@ -1067,90 +1068,118 @@ const ListView: React.FC<ListViewProps> = ({
         </div>
 
         {selectedTasks.length > 0 && (
-  <div className="fixed bottom-0 left-0 right-0 flex justify-center items-center p-6">
-    <motion.div
-      className="bg-black text-white rounded-xl shadow-lg p-3 flex items-center justify-between max-w-md w-full mx-auto"
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 100, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}
-    >
-      <div className="flex items-center">
-        <span className="font-medium mr-2 text-sm">
-          {selectedTasks.length} Tasks Selected
-        </span>
-        <motion.button
-          onClick={() => setSelectedTasks([])}
-          className="text-gray-400 hover:text-white rounded-full h-6 w-6 flex items-center justify-center"
-          whileHover={{ scale: 1.2, backgroundColor: "rgba(255,255,255,0.1)" }}
-          whileTap={{ scale: 0.9 }}
-        >
-          ✕
-        </motion.button>
-      </div>
-      <div className="flex items-center space-x-3">
-        <div className="relative" ref={multiSelectDropdownRef}>
-          <motion.button
-            onClick={() =>
-              setMultiSelectStatusOpen(!multiSelectStatusOpen)
-            }
-            className="px-3 py-1.5 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors duration-150 text-xs font-medium"
-            whileHover={{ scale: 1.05, backgroundColor: "#374151" }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Status
-          </motion.button>
-          <AnimatePresence>
-            {multiSelectStatusOpen && (
-              <motion.div
-                className="absolute z-10 right-0 bottom-10 bg-white border border-gray-200 rounded-xl shadow-lg w-32 overflow-hidden"
-                variants={dropdownVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                <div className="py-1">
-                  {(["TO-DO", "IN-PROGRESS", "COMPLETED"] as const).map(
-                    (statusOption) => (
+          <div className="fixed bottom-0 left-0 right-0 flex justify-center items-center p-4 z-50">
+            <motion.div
+              className="bg-black/90 backdrop-blur-sm text-white rounded-xl shadow-xl p-4 flex items-center justify-between max-w-md w-full mx-auto border border-gray-800"
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            >
+              <div className="flex items-center">
+                <span className="font-medium mr-3 text-sm">
+                  {selectedTasks.length} Tasks Selected
+                </span>
+                <motion.button
+                  onClick={() => setSelectedTasks([])}
+                  className="text-gray-400 hover:text-white bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <span className="text-xs">✕</span>
+                </motion.button>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="relative" ref={multiSelectDropdownRef}>
+                  <motion.button
+                    onClick={() =>
+                      setMultiSelectStatusOpen(!multiSelectStatusOpen)
+                    }
+                    className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors duration-150 text-xs font-medium flex items-center gap-1"
+                    whileHover={{ scale: 1.03, backgroundColor: "#374151" }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Status
+                    <svg
+                      className="w-3 h-3 ml-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      ></path>
+                    </svg>
+                  </motion.button>
+                  <AnimatePresence>
+                    {multiSelectStatusOpen && (
                       <motion.div
-                        key={statusOption}
-                        className="px-3 py-2 hover:bg-gray-50 text-gray-800 cursor-pointer text-xs transition-colors duration-150"
-                        onClick={() =>
-                          handleBulkStatusChange(statusOption)
-                        }
-                        whileHover={{ 
-                          backgroundColor: "#F3F4F6", 
-                          x: 3,
-                          fontWeight: "bold" 
-                        }}
-                        whileTap={{ scale: 0.98 }}
+                        className="absolute z-10 right-0 bottom-10 bg-white border border-gray-200 rounded-lg shadow-lg w-36 overflow-hidden"
+                        variants={dropdownVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
                       >
-                        {statusOption}
+                        <div className="py-1">
+                          {(["TO-DO", "IN-PROGRESS", "COMPLETED"] as const).map(
+                            (statusOption) => (
+                              <motion.div
+                                key={statusOption}
+                                className="px-3 py-2 hover:bg-gray-50 text-gray-800 cursor-pointer text-sm transition-colors duration-150 flex items-center"
+                                onClick={() =>
+                                  handleBulkStatusChange(statusOption)
+                                }
+                                whileHover={{ backgroundColor: "#F3F4F6" }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <span
+                                  className={`w-2 h-2 rounded-full mr-2 ${
+                                    statusOption === "TO-DO"
+                                      ? "bg-blue-500"
+                                      : statusOption === "IN-PROGRESS"
+                                      ? "bg-yellow-500"
+                                      : "bg-green-500"
+                                  }`}
+                                ></span>
+                                {statusOption}
+                              </motion.div>
+                            )
+                          )}
+                        </div>
                       </motion.div>
-                    )
-                  )}
+                    )}
+                  </AnimatePresence>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        <motion.button
-          onClick={handleDeleteSelectedTasks}
-          className="px-3 py-1.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-150 text-xs font-medium"
-          whileHover={{ 
-            scale: 1.05, 
-            backgroundColor: "#DC2626",
-            boxShadow: "0 0 8px rgba(220,38,38,0.5)" 
-          }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Delete
-        </motion.button>
-      </div>
-    </motion.div>
-  </div>
-)}
+                <motion.button
+                  onClick={handleDeleteSelectedTasks}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-150 text-xs font-medium flex items-center gap-1"
+                  whileHover={{ scale: 1.03, backgroundColor: "#DC2626" }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <svg
+                    className="w-3 h-3 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    ></path>
+                  </svg>
+                  Delete
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </>
   );
