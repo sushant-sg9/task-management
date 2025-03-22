@@ -51,9 +51,10 @@ const FilterDropdown = ({ label, options, value, onChange }: {
 type NavbarProps = {
   onViewChange?: (view: "list" | "board") => void;
   currentView?: "list" | "board";
+  onSearch?: (query: string) => void;
 };
 
-export default function Navbar({ onViewChange, currentView = "list" }: NavbarProps) {
+export default function Navbar({ onViewChange, currentView = "list", onSearch }: NavbarProps) {
   const [activeTab, setActiveTab] = useState<"list" | "board">(currentView);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,6 +82,14 @@ export default function Navbar({ onViewChange, currentView = "list" }: NavbarPro
   const handleAddTask = () => {
     const event = new CustomEvent('openAddTaskModal');
     window.dispatchEvent(event);
+  };
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (onSearch) {
+      onSearch(query);
+    }
   };
 
   return (
@@ -173,7 +182,7 @@ export default function Navbar({ onViewChange, currentView = "list" }: NavbarPro
                 type="text"
                 placeholder="Search tasks..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 className="w-full md:w-64 pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-1 focus:ring-purple-700"
               />
             </div>

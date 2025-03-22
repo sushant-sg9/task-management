@@ -19,10 +19,11 @@ import Loader from "../Utiles/Loader";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ListViewProps {
-  onEditTask: (task: Task) => void;
+  onEditTask: (task: Task) => void,
+  searchQuery: string
 }
 
-const ListView: React.FC<ListViewProps> = ({ onEditTask }) => {
+const ListView: React.FC<ListViewProps> = ({ onEditTask, searchQuery }) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState({
@@ -260,9 +261,18 @@ const ListView: React.FC<ListViewProps> = ({ onEditTask }) => {
     );
   };
 
-  const todoTasks = tasks.filter((task) => task.status === "TO-DO");
-  const inProgressTasks = tasks.filter((task) => task.status === "IN-PROGRESS");
-  const completedTasks = tasks.filter((task) => task.status === "COMPLETED");
+  const filterTasks = (tasksArray: Task[]) => {
+    return tasksArray.filter(task => {
+      const searchMatch = !searchQuery || 
+        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return searchMatch;
+    });
+  };
+
+  const todoTasks = filterTasks(tasks.filter((task) => task.status === "TO-DO"))
+  const inProgressTasks = filterTasks(tasks.filter((task) => task.status === "IN-PROGRESS"))
+  const completedTasks = filterTasks(tasks.filter((task) => task.status === "COMPLETED"))
 
   const getSectionColor = (status: string) => {
     switch (status) {

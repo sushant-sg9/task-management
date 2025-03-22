@@ -218,11 +218,12 @@ const DroppableColumn: React.FC<{
 interface BoardViewProps {
   onEditTask: (task: Task) => void;
   onAddTask?: (status: string) => void;
+  searchQuery: string;
 }
 
 const COLUMNS = ['TO-DO', 'IN-PROGRESS', 'COMPLETED'] as const;
 
-const BoardView: React.FC<BoardViewProps> = ({ onEditTask, onAddTask }) => {
+const BoardView: React.FC<BoardViewProps> = ({ onEditTask, onAddTask, searchQuery }) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -347,10 +348,10 @@ const BoardView: React.FC<BoardViewProps> = ({ onEditTask, onAddTask }) => {
     return tasks.filter(task => {
       const matchesStatus = task.status === status;
       const matchesCategory = !filter.category || task.category === filter.category;
-      const matchesSearch = !filter.searchTerm || 
-        task.title.toLowerCase().includes(filter.searchTerm.toLowerCase()) ||
-        task.description.toLowerCase().includes(filter.searchTerm.toLowerCase());
-      return matchesStatus && matchesCategory && matchesSearch;
+      const matchesSearch = !searchQuery || 
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesCategory && matchesSearch;
     });
   };
 
