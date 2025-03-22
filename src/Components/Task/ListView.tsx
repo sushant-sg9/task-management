@@ -12,6 +12,7 @@ import {
   FaEllipsisH,
   FaCircle,
   FaCalendarAlt,
+  FaSort
 } from "react-icons/fa";
 import { TbGridDots } from "react-icons/tb";
 import { PiCheckCircleFill } from "react-icons/pi";
@@ -23,6 +24,11 @@ interface ListViewProps {
   searchQuery: string;
   filters?: { category: string; dueDate: string };
 }
+interface SortConfig {
+  key: string | null; // Allow both string and null
+  direction: "asc" | "desc";
+}
+
 
 const ListView: React.FC<ListViewProps> = ({
   onEditTask,
@@ -53,12 +59,17 @@ const ListView: React.FC<ListViewProps> = ({
     activities: [],
     attachment: undefined,
   });
+  
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [activeTaskAction, setActiveTaskAction] = useState<string | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [multiSelectStatusOpen, setMultiSelectStatusOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: null,
+    direction: "asc",
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const multiSelectDropdownRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
@@ -198,6 +209,33 @@ const ListView: React.FC<ListViewProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const sortTasks = (tasksArray: Task[]) => {
+    if (!sortConfig.key) return tasksArray;
+
+    return [...tasksArray].sort((a, b) => {
+      if (sortConfig.key === "dueDate") {
+        const dateA = new Date(a.dueDate);
+        const dateB = new Date(b.dueDate);
+
+        if (sortConfig.direction === "asc") {
+          return dateA.getTime() - dateB.getTime();
+        } else {
+          return dateB.getTime() - dateA.getTime();
+        }
+      }
+      return 0;
+    });
+  };
+
+  const handleSortByDueDate = () => {
+    setSortConfig({
+      key: "dueDate",
+      direction:
+        sortConfig.key === "dueDate" && sortConfig.direction === "asc"
+          ? "desc"
+          : "asc",
+    });
+  };
   const handleStatusChange = async (task: Task, newStatus: Task["status"]) => {
     setLoading(true);
     try {
@@ -220,7 +258,7 @@ const ListView: React.FC<ListViewProps> = ({
       await Promise.all(updatePromises);
       await loadTasks();
       setMultiSelectStatusOpen(false);
-      setSelectedTasks([])
+      setSelectedTasks([]);
     } catch (error) {
       console.error("Error updating multiple task statuses:", error);
     } finally {
@@ -324,17 +362,15 @@ const ListView: React.FC<ListViewProps> = ({
       return searchMatch && categoryMatch && dueDateMatch;
     });
   };
-
-  const todoTasks = filterTasks(
+  const todoTasks = sortTasks(filterTasks(
     tasks.filter((task) => task.status === "TO-DO")
-  );
-  const inProgressTasks = filterTasks(
+  ));
+  const inProgressTasks = sortTasks(filterTasks(
     tasks.filter((task) => task.status === "IN-PROGRESS")
-  );
-  const completedTasks = filterTasks(
+  ));
+  const completedTasks = sortTasks(filterTasks(
     tasks.filter((task) => task.status === "COMPLETED")
-  );
-
+  ));
   const getSectionColor = (status: string) => {
     switch (status) {
       case "TO-DO":
@@ -1051,8 +1087,12 @@ const ListView: React.FC<ListViewProps> = ({
           <div className="col-span-3 text-md font-medium uppercase text-gray-500">
             Task name
           </div>
-          <div className="col-span-3 text-md font-medium uppercase text-gray-500">
-            Due date
+          <div
+            className="col-span-3 text-md font-medium uppercase text-gray-500 flex items-center cursor-pointer"
+            onClick={handleSortByDueDate}
+          >
+            Due date <FaSort />
+            {sortConfig.key === "dueDate"}
           </div>
           <div className="col-span-3 text-md font-medium uppercase text-gray-500">
             Status
