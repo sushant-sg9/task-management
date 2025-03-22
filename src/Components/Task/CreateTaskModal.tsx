@@ -24,6 +24,7 @@ interface CreateTaskModalProps {
 
 type TaskCategory = 'WORK' | 'PERSONAL';
 type TaskStatus = 'TO-DO' | 'IN-PROGRESS' | 'COMPLETED';
+type ActiveTab = 'details' | 'activity';
 
 interface FormData {
   title: string;
@@ -37,7 +38,7 @@ interface FormData {
 interface Activity {
   action: string;
   timestamp: string;
-  details?: string ;
+  details?: string;
 }
 
 const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onTaskCreated, task }) => {
@@ -52,6 +53,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onTa
   });
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('details');
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -78,6 +80,8 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onTa
       });
       setImagePreview(null);
     }
+    // Reset to details tab when opening modal
+    setActiveTab('details');
   }, [task, isOpen]);
 
   useEffect(() => {
@@ -281,298 +285,342 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onTa
     }
   };
 
+  // Determine if we should show the activity tab option
+  const hasActivities = task && task.activities && task.activities.length > 0;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm transition-all duration-300 p-3 sm:p-5">
       <div 
         ref={modalRef}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-5xl transform transition-all duration-300 scale-95 hover:scale-100 hover:opacity-100 flex flex-col lg:flex-row max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-5xl transform transition-all duration-300 scale-95 hover:scale-100 hover:opacity-100 flex flex-col max-h-[90vh] overflow-hidden"
       >
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex justify-between items-center px-4 sm:px-6 py-4 border-b sticky top-0 bg-white z-10">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex items-center">
-              <span className="bg-purple-100 text-purple-600 p-2 rounded-lg mr-2 sm:mr-3">
-                {task ? '✏️' : '✨'}
-              </span>
-              {task ? 'Edit Task' : 'Create New Task'}
-            </h2>
-            <button 
-              onClick={onClose} 
-              className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full lg:hidden"
-              aria-label="Close"
-            >
-              <IoClose size={20} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-            <div className="space-y-4 sm:space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Title</label>
-                <input
-                  type="text"
-                  name="title"
-                  required
-                  placeholder="What needs to be done?"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none shadow-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-                <div className="border rounded-lg overflow-hidden shadow-sm">
-                  <div className="flex items-center p-2 border-b bg-gray-50 overflow-x-auto">
-                    <button 
-                      type="button"
-                      onClick={() => formatText('bold')}
-                      className="p-1.5 hover:bg-gray-200 rounded-md mr-1 transition-colors"
-                      aria-label="Bold"
-                    >
-                      <FaBold className="text-gray-600" />
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => formatText('italic')}
-                      className="p-1.5 hover:bg-gray-200 rounded-md mr-1 transition-colors"
-                      aria-label="Italic"
-                    >
-                      <FaItalic className="text-gray-600" />
-                    </button>
-                    <div className="mx-2 h-4 border-l border-gray-300"></div>
-                    <button 
-                      type="button"
-                      onClick={() => formatText('bullet')}
-                      className="p-1.5 hover:bg-gray-200 rounded-md mr-1 transition-colors"
-                      aria-label="Bullet list"
-                    >
-                      <FaListUl className="text-gray-600" />
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => formatText('number')}
-                      className="p-1.5 hover:bg-gray-200 rounded-md mr-1 transition-colors"
-                      aria-label="Numbered list"
-                    >
-                      <FaListOl className="text-gray-600" />
-                    </button>
-                  </div>
-                  <textarea
-                    ref={descriptionRef}
-                    name="description"
-                    placeholder="Add details about your task..."
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className="w-full p-3 sm:p-4 min-h-[100px] sm:min-h-[120px] border-none focus:outline-none focus:ring-0 resize-none bg-white text-gray-700"
-                    maxLength={300}
-                  ></textarea>
-                  <div className="flex justify-between items-center text-xs text-gray-500 px-3 sm:px-4 py-2 bg-gray-50">
-                    <span>Markdown formatting supported</span>
-                    <span>{formData.description.length}/300 characters</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                <div className="sm:col-span-2 lg:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
-                  <div className="flex space-x-2">
-                    <button
-                      type="button"
-                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm flex-1 transition-all ${
-                        formData.category === 'WORK' 
-                          ? 'bg-purple-100 text-purple-800 border border-purple-300 font-medium shadow-sm' 
-                          : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
-                      }`}
-                      onClick={() => setFormData(prev => ({ ...prev, category: 'WORK' }))}
-                    >
-                      Work
-                    </button>
-                    <button
-                      type="button"
-                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm flex-1 transition-all ${
-                        formData.category === 'PERSONAL' 
-                          ? 'bg-pink-100 text-pink-800 border border-pink-300 font-medium shadow-sm' 
-                          : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
-                      }`}
-                      onClick={() => setFormData(prev => ({ ...prev, category: 'PERSONAL' }))}
-                    >
-                      Personal
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaCalendarAlt className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <input
-                      type="date"
-                      name="dueDate"
-                      required
-                      value={formData.dueDate}
-                      onChange={handleInputChange}
-                      className="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none shadow-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border shadow-sm transition-all outline-none appearance-none bg-no-repeat bg-right ${getStatusColor(formData.status)}`}
-                    style={{
-                      backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
-                      backgroundSize: "1.5em 1.5em",
-                      paddingRight: "2.5rem"
-                    }}
-                  >
-                    <option value="TO-DO">To Do</option>
-                    <option value="IN-PROGRESS">In Progress</option>
-                    <option value="COMPLETED">Completed</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Attachment</label>
-                <div className="border border-gray-300 border-dashed rounded-lg overflow-hidden shadow-sm">
-                  {imagePreview ? (
-                    <div className="relative group">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className="w-full h-32 sm:h-40 object-cover" 
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImagePreview(null);
-                            setFormData(prev => ({ ...prev, attachment: '' }));
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = '';
-                            }
-                          }}
-                          className="bg-white text-red-600 rounded-full p-3 hover:bg-gray-100 transition-colors shadow-lg transform hover:scale-105"
-                          aria-label="Remove image"
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div 
-                      className="py-4 sm:py-6 px-3 sm:px-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors hover:bg-gray-50"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <div className="p-2 sm:p-3 bg-purple-100 rounded-full text-purple-500 mb-2">
-                        <FaUpload className="h-5 w-5 sm:h-6 sm:w-6" />
-                      </div>
-                      <p className="mt-1 text-sm text-gray-900">
-                        <span className="text-purple-600 font-medium hover:text-purple-500">Click to upload</span>
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                      <input
-                        ref={fileInputRef}
-                        name="file-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                        disabled={loading}
-                      />
-                    </div>
-                  )}
-                  {loading && (
-                    <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-t-2 border-purple-600"></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-6 sm:mt-8 sticky bottom-0 pt-3 pb-2 bg-white border-t mt-5">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors shadow-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className={`px-4 sm:px-5 py-2 sm:py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors shadow-sm ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {task ? 'Save Changes' : 'Create Task'}
-              </button>
-            </div>
-          </form>
+        <div className="flex justify-between items-center px-4 sm:px-6 py-4 border-b sticky top-0 bg-white z-10">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex items-center">
+            <span className="bg-purple-100 text-purple-600 p-2 rounded-lg mr-2 sm:mr-3">
+              {task ? '✏️' : '✨'}
+            </span>
+            {task ? 'Edit Task' : 'Create New Task'}
+          </h2>
+          <button 
+            onClick={onClose} 
+            className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+            aria-label="Close"
+          >
+            <IoClose size={20} />
+          </button>
         </div>
 
-        {task && task.activities && task.activities.length > 0 && (
-          <div className="w-full lg:w-80 xl:w-80 border-t lg:border-t-0 lg:border-l lg:max-h-[90vh] bg-gray-50 overflow-y-auto">
-            <div className="flex justify-between items-center px-4 sm:px-6 py-4 border-b sticky top-0 bg-gray-50 z-10">
-              <h3 className="text-base sm:text-lg font-medium text-gray-800">Activity</h3>
-              <button 
-                onClick={onClose} 
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full hidden lg:block"
-                aria-label="Close"
-              >
-                <IoClose size={20} />
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
-              {task.activities.map((activity: Activity, index: number) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="mt-1 p-2 rounded-full bg-gray-100">
-                    {getActivityIcon(activity.action)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${getActivityBadgeColor(activity.action)}`}>
-                        {activity.action}
-                      </span>
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {formatDate(activity.timestamp)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700 break-words">{activity.details}</p>
-                  </div>
-                </div>
-              ))}
-
-              {task.createdAt && (
-                <div className="flex items-start space-x-3 opacity-70">
-                  <div className="mt-1 p-2 rounded-full bg-gray-100">
-                    <HiOutlineDocumentText className="text-gray-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-800">
-                        CREATED
-                      </span>
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {formatDate(task.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700">Task created</p>
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* Tab navigation for mobile view only if task has activities */}
+        {task && hasActivities && (
+          <div className="flex border-b lg:hidden">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'details' 
+                  ? 'text-purple-600 border-b-2 border-purple-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Details
+            </button>
+            <button
+              onClick={() => setActiveTab('activity')}
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'activity' 
+                  ? 'text-purple-600 border-b-2 border-purple-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Activity
+            </button>
           </div>
         )}
+
+        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+          {/* Task Details Section - Hide on mobile when activity tab is active */}
+          <div className={`flex-1 overflow-y-auto ${activeTab === 'activity' ? 'hidden lg:block' : ''}`}>
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+              <div className="space-y-4 sm:space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Title</label>
+                  <input
+                    type="text"
+                    name="title"
+                    required
+                    placeholder="What needs to be done?"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                  <div className="border rounded-lg overflow-hidden shadow-sm">
+                    <div className="flex items-center p-2 border-b bg-gray-50 overflow-x-auto">
+                      <button 
+                        type="button"
+                        onClick={() => formatText('bold')}
+                        className="p-1.5 hover:bg-gray-200 rounded-md mr-1 transition-colors"
+                        aria-label="Bold"
+                      >
+                        <FaBold className="text-gray-600" />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => formatText('italic')}
+                        className="p-1.5 hover:bg-gray-200 rounded-md mr-1 transition-colors"
+                        aria-label="Italic"
+                      >
+                        <FaItalic className="text-gray-600" />
+                      </button>
+                      <div className="mx-2 h-4 border-l border-gray-300"></div>
+                      <button 
+                        type="button"
+                        onClick={() => formatText('bullet')}
+                        className="p-1.5 hover:bg-gray-200 rounded-md mr-1 transition-colors"
+                        aria-label="Bullet list"
+                      >
+                        <FaListUl className="text-gray-600" />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => formatText('number')}
+                        className="p-1.5 hover:bg-gray-200 rounded-md mr-1 transition-colors"
+                        aria-label="Numbered list"
+                      >
+                        <FaListOl className="text-gray-600" />
+                      </button>
+                    </div>
+                    <textarea
+                      ref={descriptionRef}
+                      name="description"
+                      placeholder="Add details about your task..."
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      className="w-full p-3 sm:p-4 min-h-[100px] sm:min-h-[120px] border-none focus:outline-none focus:ring-0 resize-none bg-white text-gray-700"
+                      maxLength={300}
+                    ></textarea>
+                    <div className="flex justify-between items-center text-xs text-gray-500 px-3 sm:px-4 py-2 bg-gray-50">
+                      <span>Markdown formatting supported</span>
+                      <span>{formData.description.length}/300 characters</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                  <div className="sm:col-span-2 lg:col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm flex-1 transition-all ${
+                          formData.category === 'WORK' 
+                            ? 'bg-purple-100 text-purple-800 border border-purple-300 font-medium shadow-sm' 
+                            : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                        }`}
+                        onClick={() => setFormData(prev => ({ ...prev, category: 'WORK' }))}
+                      >
+                        Work
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm flex-1 transition-all ${
+                          formData.category === 'PERSONAL' 
+                            ? 'bg-pink-100 text-pink-800 border border-pink-300 font-medium shadow-sm' 
+                            : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                        }`}
+                        onClick={() => setFormData(prev => ({ ...prev, category: 'PERSONAL' }))}
+                      >
+                        Personal
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FaCalendarAlt className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="date"
+                        name="dueDate"
+                        required
+                        value={formData.dueDate}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none shadow-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border shadow-sm transition-all outline-none appearance-none bg-no-repeat bg-right ${getStatusColor(formData.status)}`}
+                      style={{
+                        backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                        backgroundSize: "1.5em 1.5em",
+                        paddingRight: "2.5rem"
+                      }}
+                    >
+                      <option value="TO-DO">To Do</option>
+                      <option value="IN-PROGRESS">In Progress</option>
+                      <option value="COMPLETED">Completed</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Attachment</label>
+                  <div className="border border-gray-300 border-dashed rounded-lg overflow-hidden shadow-sm">
+                    {imagePreview ? (
+                      <div className="relative group">
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="w-full h-32 sm:h-40 object-cover" 
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImagePreview(null);
+                              setFormData(prev => ({ ...prev, attachment: '' }));
+                              if (fileInputRef.current) {
+                                fileInputRef.current.value = '';
+                              }
+                            }}
+                            className="bg-white text-red-600 rounded-full p-3 hover:bg-gray-100 transition-colors shadow-lg transform hover:scale-105"
+                            aria-label="Remove image"
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        className="py-4 sm:py-6 px-3 sm:px-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors hover:bg-gray-50"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <div className="p-2 sm:p-3 bg-purple-100 rounded-full text-purple-500 mb-2">
+                          <FaUpload className="h-5 w-5 sm:h-6 sm:w-6" />
+                        </div>
+                        <p className="mt-1 text-sm text-gray-900">
+                          <span className="text-purple-600 font-medium hover:text-purple-500">Click to upload</span>
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                        <input
+                          ref={fileInputRef}
+                          name="file-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                          disabled={loading}
+                        />
+                      </div>
+                    )}
+                    {loading && (
+                      <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-t-2 border-purple-600"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6 sm:mt-8 sticky bottom-0 pt-3 pb-2 bg-white border-t mt-5">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors shadow-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`px-4 sm:px-5 py-2 sm:py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors shadow-sm ${
+                    loading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {task ? 'Save Changes' : 'Create Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Activity Section - Only show if there are activities */}
+          {hasActivities && (
+            <div 
+              className={`w-full lg:w-80 xl:w-80 lg:border-l lg:max-h-[90vh] bg-gray-50 overflow-y-auto ${
+                activeTab === 'details' ? 'hidden lg:block' : ''
+              }`}
+            >
+              <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
+                {task.activities.map((activity: Activity, index: number) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className="mt-1 p-2 rounded-full bg-gray-100">
+                      {getActivityIcon(activity.action)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${getActivityBadgeColor(activity.action)}`}>
+                          {activity.action}
+                        </span>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          {formatDate(activity.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 break-words">{activity.details}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {task.createdAt && (
+                  <div className="flex items-start space-x-3 opacity-70">
+                    <div className="mt-1 p-2 rounded-full bg-gray-100">
+                      <HiOutlineDocumentText className="text-gray-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-800">
+                          CREATED
+                        </span>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          {formatDate(task.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700">Task created</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Add submit/cancel buttons in activity tab for mobile view */}
+              <div className="lg:hidden flex justify-end space-x-3 p-4 sticky bottom-0 pt-3 pb-2 bg-gray-50 border-t mt-5">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors shadow-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('details')}
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors shadow-sm"
+                >
+                  Back to Details
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
